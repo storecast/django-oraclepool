@@ -1,0 +1,68 @@
+Log data vs. Pool config
+========================
+
+Example of live application data installed with Apache2.
+
+Most application hits are to the home page which involves a single sign on based automatic login 
+and muliple queries to return user specific data.
+Without using materialized views etc, time for doing eight or so Oracle queries is about 0.2 secs.
+
+For info on SessionPool see http://cx-oracle.sourceforge.net/html/session_pool.html#sesspool
+SessionPool(user, password, database, min, max, increment[, connectiontype, threaded, getmode=cx_Oracle.SPOOL_ATTRVAL_NOWAIT, homogeneous=True])
+
+Initial setup
+-------------
+
+~ 10 secs/req !
+
+11/Nov 
+------
+
+No pooling - eventually got it down to 4 secs with some page fragment caching and keep alives off.
+
+4.13211 sec/req
+
+~ 4 secs/req
+
+12/Nov 3pm
+----------
+
+Started pool with default hard coded settings 
+( from new report function data it uses whats n DatabaseWrapper not DatabasePool)
+
+'min':10,
+'max':100,
+'increment':10,
+'homogeneous':1,
+'threaded':True,
+'timeout':0
+
+13/Nov - 0.583086 secs/req for 3299 responses
+14/Nov - 0.721118 secs/req for 1650 responses
+15/Nov - 0.759379 secs/req for 5150 responses
+16/Nov - 0.644527 secs/req for 5454 responses
+17/Nov - 0.517728 secs/req for 3442 responses
+18/Nov - 0.642057 secs/req for 3816 responses
+
+~ 0.65 secs/req
+
+19/Nov 12 pm
+-------------
+
+Hmmm so we seem to have 0.48 if checked at lunchtime but 0.65 for the whole day
+suggests out of hours requests are slow due to pool timeouts?
+
+Lets try changing the timeout to make it longer...
+
+'min':5,
+'max':20,
+'increment':2,
+'homogeneous':1,
+'threaded':True,
+'timeout':1800
+
+20/Nov - 0.42249 sec/req for 3101 responses
+21/Nov - 0.423305 sec/req for 1833 responses
+22/Nov - 0.493179 sec/req for 2943 responses
+
+~ 0.45 secs/req

@@ -1,0 +1,60 @@
+Changelog
+=========
+
+0.6 - UNRELEASED
+----------------
+
+- Fix a bug with adding sql log to page when in DEBUG
+
+0.5 - Fix logger bug and add session config (2010-02-19)
+--------------------------------------------------------
+
+- Fix a bug preventing the logger from being used
+- Make sure session settings are only set on connection creation not cursor use
+- Add a session list of sql lines for optionally setting session parameters
+- Wrap connection signal in try except for older django compatibility.
+
+  [Ed Crewe]
+
+0.4 - Fix performance test (2010-01-29)
+---------------------------------------
+
+- Whoops, I realised the performance test was underplaying the improvement due to a bug,
+  it now gives the same performance for single connections (as expected) and 300% 
+  improvement for multiple ones.
+- Added signal for connection 'creation' and fixed raise of unicode error
+
+  [Ed Crewe]
+
+0.3 - Initial release (2010-01-28)
+----------------------------------
+
+- Added test suite including performance test to demonstrate benefits
+- Tested and made compatible with django 1.2 (as well as django 1.1)
+- Cleaned up the code and factored out anything that wasnt specific to pooling,
+  subclassing most components from the standard Oracle engine.
+- Modified logging options so DEBUG switches on log to screen and EXTRAS['log'] 
+  switches logging to file option separately.
+
+  [Ed Crewe]
+
+0.2 - Used for UoB student reps
+-------------------------------
+
+- Commented out debug print statements from DatabaseWrapper._cursor which broke install in wsgi
+- Added DatabaseWrapper.__init__ like the oracle backend with client, creation and introspection
+  borrowed from it, since creation is expected in django 1.1.1 code.
+- Added default value of None for settings in DatabaseWrapper._cursor since this argument is not 
+  expected in django 1.1.1 code.
+- Added DATABASE_EXTRAS dictionary to set all the session parameters from django config.
+- Added session pool settings report method, to check these.
+- Added python logger option and sql_log middleware
+
+  [Ed Crewe]
+
+0.1 - Unreleased
+----------------
+
+* Initial release - packaging of code from http://code.djangoproject.com/ticket/7732
+ 
+  [Taras Halturin, et al.]
