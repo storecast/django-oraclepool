@@ -1,11 +1,7 @@
 Log data vs. Pool config
 ========================
 
-Example of live application data installed with Apache2.
-
-Most application hits are to the home page which involves a single sign on based automatic login 
-and muliple queries to return user specific data.
-Without using materialized views etc, time for doing eight or so Oracle queries is about 0.2 secs.
+Every few days try and tweak our pool to see if we can optimize by experiment.
 
 For info on SessionPool see http://cx-oracle.sourceforge.net/html/session_pool.html#sesspool
 SessionPool(user, password, database, min, max, increment[, connectiontype, threaded, getmode=cx_Oracle.SPOOL_ATTRVAL_NOWAIT, homogeneous=True])
@@ -37,12 +33,18 @@ Started pool with default hard coded settings
 'threaded':True,
 'timeout':0
 
-13/Nov - 0.583086 secs/req for 3299 responses
-14/Nov - 0.721118 secs/req for 1650 responses
-15/Nov - 0.759379 secs/req for 5150 responses
-16/Nov - 0.644527 secs/req for 5454 responses
-17/Nov - 0.517728 secs/req for 3442 responses
-18/Nov - 0.642057 secs/req for 3816 responses
+13/Nov Fri
+0.583086 secs/req for 3299 responses
+14/Nov Sat
+0.721118 secs/req for 1650 responses
+15/Nov Sun
+0.759379 secs/req for 5150 responses
+16/Nov Mon
+0.644527 secs/req for 5454 responses
+17/Nov Tues
+0.517728 secs/req for 3442 responses
+18/Nov Wed
+0.642057 secs/req for 3816 responses
 
 ~ 0.65 secs/req
 
@@ -61,8 +63,130 @@ Lets try changing the timeout to make it longer...
 'threaded':True,
 'timeout':1800
 
-20/Nov - 0.42249 sec/req for 3101 responses
-21/Nov - 0.423305 sec/req for 1833 responses
-22/Nov - 0.493179 sec/req for 2943 responses
+20/Nov Fri
+0.42249 sec/req for 3101 responses
+21/Nov Sat
+0.423305 sec/req for 1833 responses
+22/Nov Sun
+0.493179 sec/req for 2943 responses
 
 ~ 0.45 secs/req
+
+23/Nov 10:30 pm
+---------------
+
+Lets experiment with a lower min so less connections need be managed
+(NB: Cant set min=max or increment=0 ie. static pool size causes an error) 
+Also increase the timeout to an hour to reduce connection changing further.
+
+'min':4,
+'max':6,
+'increment':1,
+'homogeneous':1,
+'threaded':True,
+'timeout':3600
+
+23/Nov Mon
+0.599628 sec/req for 4922 responses
+24/Nov Tues
+0.661355 sec/req for 4392 responses
+
+~ 0.63 secs/req
+
+25/Nov 1:30 pm
+--------------
+
+Well that was no good so back to the same connections as previously and reduce
+the timeout to 10 minutes. 
+
+'min':5,
+'max':20,
+'increment':2,
+'homogeneous':1,
+'threaded':True,
+'timeout':600
+
+25/Nov Wed
+0.510933 sec/req for 4233 responses
+26/Nov Thur
+0.738257 sec/req for 4257 responses
+
+~ 0.62 secs/req
+
+27/Nov Fri 12:15 pm
+--------------------
+
+Making it longer and shorter were both worse! So well keep it the same but see if 
+we can make do with less max connections.
+
+'min':5,
+'max':10,
+'increment':2,
+'homogeneous':1,
+'threaded':True,
+'timeout':1800
+
+28/Nov Sat
+1.2611 sec/req for 1605 responses
+29/Nov Sun
+0.785797 sec/req for 2772 responses
+30/Nov Mon
+0.672099 sec/req for 4802 responses
+1/Dec Tues
+0.484514
+2/Dec Wed
+0.645967 sec/req for 3650 responses
+3/Dec Thurs
+0.661175 sec/req for 3983 responses
+
+Weird its now ~ 0.75 secs/req
+
+4/Dec Fri 11:25 am
+------------------
+
+OK lets just switch to mod_wsgi without changing pooling so we
+can compare over the next 5 days including a weekend to see
+if its better.
+
+4/Dec Fri
+0.545871 sec/req for 2937 responses
+5/Dec Sat
+0.703087 sec/req for 1772 responses
+6/Dec Sun
+0.830659 sec/req for 2641 responses
+
+7/Dec Mon 9:26 am
+-----------------
+
+Hmmm that seems slightly worse, lets drop back to the best settings
+we had for mod_python  (~ 0.45 secs/req above)
+
+'min':5,
+'max':20,
+'increment':2,
+'homogeneous':1,
+'threaded':True,
+'timeout':1800
+
+8/Dec Tues
+0.646654 sec/req for 3912 responses
+9/Dec Wed
+0.56139 sec/req for 3958 responses
+10/Dec Thur
+0.474823 sec/req for 4238 responses
+11/Dec Fri
+0.403062 sec/req for 2334 responses
+12/Dec Sat
+0.671444 sec/req for 861 responses
+13/Dec Sun
+0.852484 sec/req for 1060 responses
+
+14/Dec Mon 9-30 am
+-------------------
+
+OK well its looks slightly worse, ie. 0.52 sec/req during the week and a lot worse during 
+the lighter traffic weekend - so lets flip it to mod_python again and confirm.
+
+NB: Reading the documentation it seemed to suggest mod_wsgi only performs well if mod_python is
+not installed since it takes priority over apache resources. I suppose this is the final test 
+option (but I will need to also switch euroagency to wsgi).
