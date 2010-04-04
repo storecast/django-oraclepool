@@ -1,3 +1,4 @@
+-*- restructuredtext -*-
 ILRT Django Oracle pool
 =======================
 
