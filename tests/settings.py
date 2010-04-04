@@ -18,9 +18,11 @@ EXTRAS = {'min':4,         # start number of connections
           'homogeneous':1, # 1 = single credentials, 0 = multiple credentials
           'threaded':True, # server platform optimisation 
           'timeout':10,   # connection timeout, 600 = 10 mins
-          'log':10,         # extra logging functionality
+          'log':0,         # extra logging functionality
           'logpath':'.',    # file system path to log file
           'existing':'Unicode',   # Type modifications if using existing database data
+          'session': ["alter session set session_cached_cursors = 8;",
+                      "alter session set cursor_sharing = 'SIMILAR'"]
           }
 
 # Use django 1.2 or later multi-db setting (see rewrite for pre 1.2 below ...)
@@ -125,10 +127,10 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
+    'performance',
     'apitest',
     'regressiontests',
     'slicing',
     'nulls',
-    'aggregates',
-    'performance'
+    'aggregates'
 )

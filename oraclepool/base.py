@@ -5,7 +5,10 @@ Requires cx_Oracle: http://www.python.net/crew/atuining/cx_Oracle/
 
 import os, sys
 from django.db.backends import BaseDatabaseWrapper, BaseDatabaseValidation, util
-
+try:
+    from django.db.backends.signals import connection_created
+except:
+    connection_created = None
 # Makes it explicit where the default oracle versions fo these components are used
 from django.db.backends.oracle.base import OracleParam
 from django.db.backends.oracle.base import DatabaseFeatures as OracleDatabaseFeatures
@@ -50,6 +53,9 @@ def get_extras(database='default'):
                       'log':0,         # extra logging functionality
                       'logpath':'',    # file system path for oraclepool.log file
                       'existing':'',   # Type modifications if using existing database data
+                      'session':[]     # Add session optimisations applied to each fresh connection, eg.
+                                       #   ['alter session set cursor_sharing = similar',
+                                       #    'alter session set session_cached_cursors = 20']
                       }
     if hasattr(settings, 'DATABASES'):
         db = settings.DATABASES.get(database,{})
@@ -87,7 +93,7 @@ def get_logger(extras):
         # if log file is writable do it
         if not logfile:
             print 'Log path %s not found' % extras.get('logpath','')
-            logger = None
+            return None
         else:
             try:
                 logging.basicConfig(filename=logfile, level=loglevel)
@@ -103,10 +109,13 @@ def get_logger(extras):
                                                                                              loglevel)
                 print 'Log started at %s' % logfile
                 logger.info(msg)
+                return logger
             except:
-                logger = None
+                print 'Log configuration failed' 
+                return None
     else:
-        logger = None
+        print 'No logging set so exceptions will be raised not logged'
+        return None
 
     # Add sql logging for all requests if DEBUG level
     if extras.get('log') == 10 or settings.DEBUG:
@@ -121,6 +130,9 @@ logger = get_logger(DATABASE_EXTRAS)
 class DatabaseFeatures(OracleDatabaseFeatures):
     """ Add extra options from default Oracle ones
         Plus switch off save points and id return
+        See http://groups.google.com/group/django-developers/browse_thread/thread/bca33ecf27ff5d63
+        Savepoints could be turned on but are not needed
+        and since they may impact performance they are turned off here 
     """
     uses_savepoints = False
     can_return_id_from_insert = False
@@ -256,45 +268,53 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return getattr(self.__class__, '_pool')
         
     pool = property (_get_pool)
-	
+
     def _cursor(self, settings=None):
         """ Get a cursor from the connection pool """
         cursor = None
         if self.pool is not None:
             if self.connection is None:
+                # Set oracle date to ansi date format.  This only needs to execute
+                # once when we create a new connection. 
                 self.connection = self.pool.acquire()
+                if connection_created:
+                    # Assume acquisition of existing connection = create for django signal
+                    connection_created.send(sender=self.__class__)
                 if logger:
                     logger.info("Acquire pooled connection \n%s\n" % self.connection.dsn)
-        	
-            cursor = FormatStylePlaceholderCursor(self.connection)
-            # Set oracle date to ansi date format.  This only needs to execute
-            # once when we create a new connection.
-            cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
-                           "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
-            try:
-                self.oracle_version = int(self.connection.version.split('.')[0])
-                # There's no way for the DatabaseOperations class to know the
-                # currently active Oracle version, so we do some setups here.
-                # TODO: Multi-db support will need a better solution (a way to
-                # communicate the current version).
-                if self.oracle_version <= 9:
-                    self.ops.regex_lookup = self.ops.regex_lookup_9
-                else:
-                    self.ops.regex_lookup = self.ops.regex_lookup_10
-            except ValueError, err:
-                if logger:
-                    logger.warn(str(err))
-            try:
-                self.connection.stmtcachesize = 20
-            except:
-                # Django docs specify cx_Oracle version 4.3.1 or higher, but
-                # stmtcachesize is available only in 4.3.2 and up.
-                pass
+
+                cursor = FormatStylePlaceholderCursor(self.connection)
+                cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
+                               "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
+                if DATABASE_EXTRAS.get('session',[]):
+                    for sql in DATABASE_EXTRAS['session']:
+                        cursor.execute(sql)
+                try:
+                    self.oracle_version = int(self.connection.version.split('.')[0])
+                    # There's no way for the DatabaseOperations class to know the
+                    # currently active Oracle version, so we do some setups here.
+                    # TODO: Multi-db support will need a better solution (a way to
+                    # communicate the current version).
+                    if self.oracle_version <= 9:
+                        self.ops.regex_lookup = self.ops.regex_lookup_9
+                    else:
+                        self.ops.regex_lookup = self.ops.regex_lookup_10
+                except ValueError, err:
+                    if logger:
+                        logger.warn(str(err))
+                try:
+                    self.connection.stmtcachesize = 20
+                except:
+                    # Django docs specify cx_Oracle version 4.3.1 or higher, but
+                    # stmtcachesize is available only in 4.3.2 and up.
+                    pass
+            else:
+                cursor = FormatStylePlaceholderCursor(self.connection)                
         else:
             if logger:
                 logger.critical('Pool couldnt be created')
             else:
-                raise u'Pool couldnt be created'
+                raise 'Pool couldnt be created'
             
         if not cursor:
             cursor = FormatStylePlaceholderCursor(self.connection)
@@ -309,6 +329,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 logger.debug("Release pooled connection\n%s\n" % self.connection.dsn)
             self.pool.release(self.connection)
             self.connection = None
+
+    def _savepoint_commit(self, sid):
+        """ Oracle doesn't support savepoint commits.  Ignore them. """
+        pass
 
 class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
     """ Added just to allow use of % for like queries without params
@@ -336,7 +360,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
                 if logger:
                     logger.critical(err)
                 else:
-                    raise unicode(err)
+                    raise str(err)
                 
     def execute(self, query, params=[]):
         if params is None:
@@ -356,7 +380,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if logger:
                 logger.critical(err)
             else:
-                raise unicode(err)
+                raise err
 
     def executemany(self, query, params=[]):
         try:
@@ -377,4 +401,4 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if logger:
                 logger.critical('%s due to query:%s' % (e, query))                
             else:
-                raise unicode(e)
+                raise str(e)

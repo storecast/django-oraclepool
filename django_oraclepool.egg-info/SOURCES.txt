@@ -5,7 +5,6 @@ django_oraclepool.egg-info/PKG-INFO
 django_oraclepool.egg-info/SOURCES.txt
 django_oraclepool.egg-info/dependency_links.txt
 django_oraclepool.egg-info/entry_points.txt
-django_oraclepool.egg-info/namespace_packages.txt
 django_oraclepool.egg-info/not-zip-safe
 django_oraclepool.egg-info/requires.txt
 django_oraclepool.egg-info/top_level.txt

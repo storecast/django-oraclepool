@@ -1,11 +1,6 @@
 TODO
 ----
 
-- The performance test indicates that query speed over a single connection is half that of the
-  normal Oracle connector. Need to check if this is really the case in a production environment.
-  If so need to determine if its a problem in django-oraclepool or if it relates to the different 
-  features of a cx_Oracle pooled connection. 
-
 - Oracle 11g has internal session pooling - DRCP - and cx_Oracle can use that for
   even better performance, so need to add appropriate modification to test whether 
   the database 11g or later, and use this feature in place of a cx_Oracle side pool.

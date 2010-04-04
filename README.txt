@@ -2,7 +2,7 @@ ILRT Django Oracle pool
 =======================
 
 Ed Crewe, `ILRT
-<http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, January 2010
+<http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, February 2010
 
 Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
 django database backend that uses cx_Oracle session pooling for connections
@@ -29,9 +29,10 @@ Extra features
 - Added an option for running against existing (older) Oracle databases, ie those 
   which may not have unicode for character fields.
 
-- Added a modification to the cursor to not parse parameters if not required, which
-  also allows for unescaped % signs to be added to the data, e.g. when running from
-  model creation hook sql files.
+- Option also allows running the tests against an existing database so that 
+  running tests doesnt require database creation (oracle sys dba) rights.
+
+- Added a modification to the cursor to not parse parameters if not required.
 
 Why use it?
 -----------
@@ -39,7 +40,7 @@ Why use it?
 Perhaps due to our remotely distributed Oracle network taking a very long time 
 to establish connections, the use of cx_Oracle's session pooling for 
 connections provided a truely radical performance boost for requests 
-from 3-4 secs/req to 0.4 secs/req, ie a 900% performance increase !! 
+from 3-4 secs/req to 0.4 secs/req, so many times faster.   
 
 For single direct Oracle access it might still give a doubling of performance. 
 Install it and run the performance test to find out (see below).
@@ -64,7 +65,16 @@ are used
 ...                  'log':0,         # extra logging functionality turned on
 ...                  'logfile':'',    # file system path to log file
 ...                  'existing':''    # Type modifications for existing database and flag for tests
+...                  'session':[]     # Add session optimisations applied to each fresh connection, eg.
+...                                    #   alter session set cursor_sharing = similar;
+...                                    #   Enables use of bind variables assuming it isnt set at a system level 
+...				       #   alter session set session_cached_cursors = 20;
+...                                    #   Allows cursor reuse between queries   
 ...                  }
+
+Note that if you want sql logging to screen when in DEBUG mode then add 
+'oraclepool.log_sql.SQLLogMiddleware' to your MIDDLEWARE_CLASSES
+
 
 General Performance
 -------------------
@@ -78,6 +88,10 @@ So you will often get the slower pool populating requests.
 
 Using mod_wsgi rather than mod_python may give a 25% added increase although this needs
 confirmation on a production instance.
+
+It should be remembered that there is also a very great deal of performance work that can be 
+done at the database level. I have posted a page with some of the tips and tricks for 
+improving database performance on my blog - http://python.blogs.ilrt.org/database-performance/
 
 Pooling alternatives
 --------------------
