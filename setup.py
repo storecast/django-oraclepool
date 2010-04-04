@@ -7,7 +7,8 @@ setup(name='ilrtdjango.oracle_pool',
       version=version,
       description="django database backend that uses cx_Oracle session pooling for connections",
       long_description=open("README.txt").read() + "\n" +
-                       open(os.path.join("docs", "HISTORY.txt")).read(),
+                       open(os.path.join("docs", "LOG_SESSION_CONFIGS.txt")).read() + "\n" +
+                       open(os.path.join("docs", "HISTORY.txt")).read(),      
       # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
         "Programming Language :: Python",

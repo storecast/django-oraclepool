@@ -9,6 +9,9 @@ Changelog
   borrowed from it, since creation is expected in django 1.1.1 code.
 - Added default value of None for settings in DatabaseWrapper._cursor since this argument is not 
   expected in django 1.1.1 code.
+- Added DATABASE_EXTRAS dictionary to set all the session parameters from django config.
+- Added session pool settings report method, to check these.
+- Added python logger option and sql_log middleware
 
 0.1 - Unreleased
 ----------------
