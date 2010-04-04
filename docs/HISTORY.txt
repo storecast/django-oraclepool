@@ -1,8 +1,20 @@
 Changelog
 =========
 
-0.2 - Used for student reps
----------------------------
+0.3 - Initial release (2010-01-28)
+----------------------------------
+
+- Added test suite including performance test to demonstrate benefits
+- Tested and made compatible with django 1.2 (as well as django 1.1)
+- Cleaned up the code and factored out anything that wasnt specific to pooling,
+  subclassing most components from the standard Oracle engine.
+- Modified logging options so DEBUG switches on log to screen and EXTRAS['log'] 
+  switches logging to file option separately.
+
+  [Ed Crewe]
+
+0.2 - Used for UoB student reps
+-------------------------------
 
 - Commented out debug print statements from DatabaseWrapper._cursor which broke install in wsgi
 - Added DatabaseWrapper.__init__ like the oracle backend with client, creation and introspection
@@ -13,8 +25,11 @@ Changelog
 - Added session pool settings report method, to check these.
 - Added python logger option and sql_log middleware
 
+  [Ed Crewe]
+
 0.1 - Unreleased
 ----------------
 
 * Initial release - packaging of code from http://code.djangoproject.com/ticket/7732
-
+ 
+  [Taras Halturin, et al.]

@@ -1,32 +1,70 @@
 ILRT Django Oracle pool
 =======================
-UNRELEASED
 
-Ed Crewe, ILRT, University of Bristol Nov 11th 2009
+Ed Crewe, `ILRT
+<http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, January 2010
 
 Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
-
-With various tweaks in base.py to get it to work with django 1.1.1 see the
-change log below.
-
 django database backend that uses cx_Oracle session pooling for connections
 
+Original Code Modifications
+---------------------------
+
+Pruned original ticket's base.py to just hold the pooling relevant code. 
+Using the standard Oracle connection for the rest of the database classes, 
+ie. operations, client and introspection. 
+
+Tested with django 1.1 and 1.2, deals with the differences eg. to settings
+handling. 
+
+Extra features
+--------------
+
+- Added the pooling and logging parameters to the settings.
+
+- The connector uses the standard python logging model and caters for logging 
+  full details of queries, either to a file log or appending them to the 
+  bottom of the screen if the log level is DEBUG.
+
+- Added an option for running against existing (older) Oracle databases, ie those 
+  which may not have unicode for character fields.
+
+- Added a modification to the cursor to not parse parameters if not required, which
+  also allows for unescaped % signs to be added to the data, e.g. when running from
+  model creation hook sql files.
+
+Why use it?
+-----------
+
 Perhaps due to our remotely distributed Oracle network taking a very long time 
-to establish connections, the use of cx_Oracle's 
-session pooling for connections provided a truely radical performance boost
-for requests from 3-4 secs/req to 0.4 secs/req  
-ie a 900% performance increase !! 
+to establish connections, the use of cx_Oracle's session pooling for 
+connections provided a truely radical performance boost for requests 
+from 3-4 secs/req to 0.4 secs/req, ie a 900% performance increase !! 
+
+For single direct Oracle access it might still give a doubling of performance. 
+Install it and run the performance test to find out (see below).
 
 Installation
 ------------
 
 Download the egg (or use buildout) or download the tarball and extract it. 
-Then add /path/to/ilrtdjango.oracle_pool to your python path.
+Then add /path/to/django-oraclepool to your python path.
 
-Specify DATABASE_ENGINE = 'ilrtdjango.oracle_pool' instead of 'oracle' in your settings.  
+Specify DATABASE_ENGINE = 'oraclepool' instead of 'oracle' in your settings.  
 
-No other changes necessary because the pool settings are hard coded at the moment, should 
-modify that to be configured via the DATABASE_EXTRAS setting.
+If you dont want to use the default extra database settings then the following defaults
+are used
+
+>>> DEFAULT_EXTRAS = {'min':4,        # starting number of pooled connections
+...                  'max':8,         # maximum number of connections in the pool
+...                  'increment':1,   # increase by this amount when more are needed
+...                  'homogeneous':1, # 1 = single credentials, 0 = multiple credentials
+...                  'threaded':True, # server platform optimisation 
+...                  'timeout':600,   # connection timeout, 600 = 10 mins
+...                  'log':0,         # extra logging functionality turned on
+...                  'logfile':'',    # file system path to log file
+...                  'existing':''    # Type modifications for existing database and flag for tests
+...                  }
 
 General Performance
 -------------------
@@ -50,8 +88,8 @@ Also tried out pyora pool see http://code.google.com/p/pyorapool
 but found increase was only around 90% and also had 
 issues with connection control and database edits failing.
 This also requires the whole architecture of a separate remote procedure call daemon 
-that holds the connection pool. Uneccesary here ... although possibly useful
-for pooling across all apps, or multiple servers.
+that holds the connection pool. Uneccesary here ... although useful
+for pooling across different applications, or multiple servers.
 
 ORM pools
 
@@ -60,11 +98,34 @@ in development, unless you plugin another ORM, eg. http://www.sqlalchemy.org/ in
 However that does require code rewriting.
 
 Having said that a generic ORM level pool is unlikely to perform as well as one at the 
-database connector level, which in turn is going to be less fast than one within the database itself.
+database connector level, which in turn is going to be less fast than one within the 
+database itself (see below).
 
-Speaking of which, remember with 11g it has Oracle side session pooling - DRCP - and cx_Oracle can use that for
-even better performance, so need to add appropriate modification to test if you are using 11g or later, 
-and use this feature (requires cx_Oracle 5, see http://www.oracle.com/technology/pub/articles/tuininga-cx_oracle.html).
+Tests
+-----
+
+The tests are run via separate test apps in the django-oraclepool folder.
+Some of these tests are derived from a set for http://code.google.com/p/django-mssql/
+
+They also include the option to run the test suite against an existing database for users who dont
+have full oracle dba rights on their test oracle servers. 
+
+The key extra tests are performance timings for running the test suite via the pooled oracle
+connection vs the standard one. Hopefully these timings should indicate whether using oraclepool is
+of value when using django with your oracle server network. 
+
+Run the tests by running django-oraclepool/tests/manage.py test 
+Or run individual tests by supplying there name, eg. manage.py test performance
+
+The performance test simulates a real environment by running up a number of connections
+as would exist with a production web server (the Apache2 default is 2 processes * 64 threads)
+whilst the test creates a maximum of only 32.
+In practise I found the actual performance improvement significantly greater than that indicated 
+by the doubling of speed that the multiple connections performance test gives. However that
+may not be the case dependent on your production oracle and web server environment.
+
+
+
 
 
 

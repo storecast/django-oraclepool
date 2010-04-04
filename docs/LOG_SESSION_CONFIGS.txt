@@ -1,7 +1,11 @@
 Log data vs. Pool config
 ========================
 
-Every few days try and tweak our pool to see if we can optimize by experiment.
+Example of live application data installed with Apache2.
+
+Most application hits are to the home page which involves a single sign on based automatic login 
+and muliple queries to return user specific data.
+Without using materialized views etc, time for doing eight or so Oracle queries is about 0.2 secs.
 
 For info on SessionPool see http://cx-oracle.sourceforge.net/html/session_pool.html#sesspool
 SessionPool(user, password, database, min, max, increment[, connectiontype, threaded, getmode=cx_Oracle.SPOOL_ATTRVAL_NOWAIT, homogeneous=True])
@@ -33,18 +37,12 @@ Started pool with default hard coded settings
 'threaded':True,
 'timeout':0
 
-13/Nov
-0.583086 secs/req for 3299 responses
-14/Nov
-0.721118 secs/req for 1650 responses
-15/Nov
-0.759379 secs/req for 5150 responses
-16/Nov
-0.644527 secs/req for 5454 responses
-17/Nov
-0.517728 secs/req for 3442 responses
-18/Nov
-0.642057 secs/req for 3816 responses
+13/Nov - 0.583086 secs/req for 3299 responses
+14/Nov - 0.721118 secs/req for 1650 responses
+15/Nov - 0.759379 secs/req for 5150 responses
+16/Nov - 0.644527 secs/req for 5454 responses
+17/Nov - 0.517728 secs/req for 3442 responses
+18/Nov - 0.642057 secs/req for 3816 responses
 
 ~ 0.65 secs/req
 
@@ -63,25 +61,8 @@ Lets try changing the timeout to make it longer...
 'threaded':True,
 'timeout':1800
 
-20/Nov 
-0.42249 sec/req for 3101 responses
-21/Nov
-0.423305 sec/req for 1833 responses
-22/Nov
-0.493179 sec/req for 2943 responses
+20/Nov - 0.42249 sec/req for 3101 responses
+21/Nov - 0.423305 sec/req for 1833 responses
+22/Nov - 0.493179 sec/req for 2943 responses
 
 ~ 0.45 secs/req
-
-23/Nov 10:30 pm
----------------
-
-Lets experiment with a lower min so less connections need be managed
-(NB: Cant set min=max or increment=0 ie. static pool size causes an error) 
-Also increase the timeout to an hour to reduce connection changing further.
-
-'min':4,
-'max':6,
-'increment':1,
-'homogeneous':1,
-'threaded':True,
-'timeout':3600

@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 import os
 
-version = '0.2'
+version = '0.3'
 
-setup(name='ilrtdjango.oracle_pool',
+setup(name='django-oraclepool',
       version=version,
       description="django database backend that uses cx_Oracle session pooling for connections",
       long_description=open("README.txt").read() + "\n" +
-                       open(os.path.join("docs", "LOG_SESSION_CONFIGS.txt")).read() + "\n" +
+                       open(os.path.join("docs", "TODO.txt")).read() + "\n" +      
                        open(os.path.join("docs", "HISTORY.txt")).read(),      
       # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
@@ -15,12 +15,11 @@ setup(name='ilrtdjango.oracle_pool',
         "Topic :: Software Development :: Libraries :: Python Modules",
         ],
       keywords='django oracle connection pooling cx_Oracle',
-      author='Taras Halturin, Ed Crewe',
-      author_email='halturin@gmail.com',
+      author='Ed Crewe, Taras Halturin',
+      author_email='ed.crewe@bris.ac.uk',
       url='http://code.djangoproject.com/ticket/7732',
       license='Apache',
-      packages=find_packages(exclude=['ez_setup']),
-      namespace_packages=['ilrtdjango'],
+      packages=['oraclepool'],
       include_package_data=True,
       zip_safe=False,
       install_requires=[

@@ -33,18 +33,22 @@ class PerformanceTestCase(TestCase):
         pool connection creation time differences
      """
 
-    conncount = 64 # Apache2 default is 2 processes with 64 threads = 128
-    querycount = 60  # multiply by five for number of queries
+    conncount = 32 # Apache2 default is 2 processes with 64 threads = 128
+    querycount = 30  # multiply by five for number of queries
     conns = {'oracle':[],
              'oraclepool':[]}
     rows = {'oracle':0,
             'oraclepool':0}
     newconns = 1
-    start = datetime.now()
+    start = {}
+    end = {}
     time = {}
     
     def resetTimer(self):
-        self.start = datetime.now()        
+        self.start = {'oracle':[],
+                      'oraclepool':[]}
+        self.end = {'oracle':[],
+                    'oraclepool':[]}
         self.time = {'oracle':0,
                      'oraclepool':0}
         
@@ -62,22 +66,23 @@ class PerformanceTestCase(TestCase):
             print "\n-----------------------------------------------"            
             if i == 0:
                 print 'Run query speed test set using a single connection'
-                DATABASES['oraclepool']['EXTRAS']['min'] = 1
-                DATABASES['oraclepool']['EXTRAS']['increment'] = 0
             else:
                 print 'Run test set using real world multiple process thread held connections'
-                DATABASES['oraclepool']['EXTRAS']['min'] = 4
-                DATABASES['oraclepool']['EXTRAS']['increment'] = 2
-                DATABASES['oraclepool']['EXTRAS']['max'] = 8                
             print "-----------------------------------------------\n"
             
             for engine in ['oracle','oraclepool']:
+                self.engine = engine
                 DATABASES['default'] = DATABASES[engine]
-                self.addData(engine)
-                self.queryData(engine)
+                self.addData()
+                self.queryData()
                 OneTable.objects.all().delete()
+                j = 0
+                for start in self.start[engine]:
+                    delta = self.end[engine][j] - start
+                    self.time[engine] += delta.microseconds
+                    j += 1
                 conncount[engine] = 1 - i
-                for conn in self.conns[engine]:
+                for conn in self.conns['oracle']:
                     if conn:
                         conncount[engine] +=1
                 print '%s engine took %s microsecs with %s connections' % (engine,
@@ -92,8 +97,8 @@ class PerformanceTestCase(TestCase):
                 adj = 'of the speed of'
             print 'Oraclepool is %d percent %s Oracle engine' % (speed,adj)
 
-    def addData(self, engine):
-        self.dummy_request_start(engine)
+    def addData(self):
+        self.dummy_request_start()
         OneTable(b='here').save()
         OneTable(b='is').save()
         OneTable(b='some').save()
@@ -104,25 +109,27 @@ class PerformanceTestCase(TestCase):
         OneTable(b='fgh').save()
         OneTable(b='fgh').save()
         OneTable(b='ijk').save()
-        self.dummy_request_end(engine)        
+        self.dummy_request_end()        
 
-    def queryData(self, engine):
+    def queryData(self):
         """ Do a lot of queries """
-        for i in range(0, self.querycount):
-            self.dummy_request_start(engine)
-            self.runQuery(engine, b__startswith='f')
-            self.runQuery(engine, b__endswith='h')
-            self.runQuery(engine, b__contains='e')        
-            self.runQuery(engine, twotable__b__startswith='B')
-            self.runQuery(engine, twotable__b__exact='B1')        
-            self.dummy_request_end(engine)
+        for engine in ['oraclepool','oracle']:
+            self.engine = engine
+            for i in range(0, self.querycount):
+                self.runQuery(b__startswith='f')
+                self.runQuery(b__endswith='h')
+                self.runQuery(b__contains='e')        
+                self.runQuery(twotable__b__startswith='B')
+                self.runQuery(twotable__b__exact='B1')        
 
-    def runQuery(self, engine, **kwargs):
+    def runQuery(self, **kwargs):
         """ Switch engine each time """
+        self.dummy_request_start()
         Q = OneTable.objects.filter(**kwargs)
         for rec in Q:
             retrieve = rec
-            self.rows[engine] += 1
+            self.rows[self.engine] += 1
+        self.dummy_request_end()
         return
 
     def setup_conns(self):
@@ -136,10 +143,10 @@ class PerformanceTestCase(TestCase):
             each of these to more realistically simulate a production web server
         """
         for engine in ['oraclepool','oracle']:        
-            for i in range(0, self.conncount):
+            for i in range(0,self.conncount):
                 self.conns[engine].append(None)
 
-    def get_connection(self, engine):
+    def get_connection(self):
         """ The global connection object is switched whenever 
             a different process or threads serves the request
             NB: Must call cursor for it to actually connect to oracle
@@ -148,26 +155,25 @@ class PerformanceTestCase(TestCase):
         if self.newconns:
             globals()['connection'].close()
             globals()['connection'] = None
-            DATABASES['default'] = DATABASES[engine]
-            backend = load_backend(engine)
+            DATABASES['default'] = DATABASES[self.engine]
+            backend = load_backend(self.engine)
             process = randint(0,self.conncount - 1)
-            if not self.conns[engine][process]:
-                self.conns[engine][process] = backend.DatabaseWrapper(get_settings_dict(engine)) 
-                cursor = self.conns[engine][process].cursor()
-            globals()['connection'] = self.conns[engine][process]
+            if not self.conns[self.engine][process]:
+                self.conns[self.engine][process] = backend.DatabaseWrapper(get_settings_dict(self.engine)) 
+                cursor = self.conns[self.engine][process].cursor()
+            globals()['connection'] = self.conns[self.engine][process]
         return
 
-    def dummy_request_start(self, engine):
+    def dummy_request_start(self):
         """ Send the normal signals and start the timer """
-        self.start = datetime.now()
-        self.get_connection(engine)
+        self.start[self.engine].append(datetime.now())
+        self.get_connection()
         globals()['connection'].queries = []        
         signals.request_started.send(sender=self.__class__)
 
-    def dummy_request_end(self, engine):
+    def dummy_request_end(self):
         """ Send the normal signals and end the timer """        
         signals.request_finished.disconnect(close_connection)
         signals.request_finished.send(sender=self.__class__)
         signals.request_finished.connect(close_connection)
-        delta = datetime.now() - self.start
-        self.time[engine] += delta.microseconds
+        self.end[self.engine].append(datetime.now())
