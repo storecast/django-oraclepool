@@ -1,1 +1,8 @@
-Please see the documentation in the [[../src/|the README]] and [[../src/docs|the docs folder]]
+Please download the released eggs and tarballs from [[http://pypi.python.org/pypi/django-oraclepool/pypi|pypi]]
+
+See the documentation packaged in them
+
+* [[http://bitbucket.org/edcrewe/django-oraclepool/src/|the README]] 
+* [[http://bitbucket.org/edcrewe/django-oraclepool//src/docs/HISTORY.txt|HISTORY]]
+* [[http://bitbucket.org/edcrewe/django-oraclepool//src/docs/TODO.txt|TODO]]
+
