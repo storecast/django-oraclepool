@@ -41,13 +41,17 @@ IntegrityError = Database.IntegrityError
 os.environ['NLS_LANG'] = '.UTF8'
 
 def get_extras(database='default'):
-    """ NB: Oracle already has OPTIONS specific to cx_Oracle.connection() use
+    """ Oracle already has OPTIONS specific to cx_Oracle.connection() use
         This adds extra pool and sql logging attributes to the settings 
+
+        'homogeneous':1, # 1 = single credentials, 0 = multiple credentials
+        Dropped this option to use multiple credentials since if supplied
+        to Database.version (ie cx_Oracle) < '5.0.0' it breaks and we want
+        separate pools for separate credentials anyhow.
     """
     DEFAULT_EXTRAS = {'min':4,         # start number of connections
                       'max':8,         # max number of connections
                       'increment':1,   # increase by this amount when more are needed
-                      'homogeneous':1, # 1 = single credentials, 0 = multiple credentials
                       'threaded':True, # server platform optimisation 
                       'timeout':600,   # connection timeout, 600 = 10 mins
                       'log':0,         # extra logging functionality
@@ -92,29 +96,24 @@ def get_logger(extras):
             logfile = os.path.join(os.path.abspath(os.path.dirname(logfile)),filename)
         # if log file is writable do it
         if not logfile:
-            print 'Log path %s not found' % extras.get('logpath','')
+            raise 'Log path %s not found' % extras.get('logpath','')
             return None
         else:
-            try:
-                logging.basicConfig(filename=logfile, level=loglevel)
-                logger = logging.getLogger("oracle_pool")
-                logger.setLevel(loglevel)
-                ch = logging.StreamHandler()
-                ch.setLevel(loglevel)
-                formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-                ch.setFormatter(formatter)
-                logger.addHandler(ch)
-                from datetime import datetime
-                msg = '%s #### Started django-oraclepool SQL logging at level %s ####' % (datetime.now(),
-                                                                                             loglevel)
-                print 'Log started at %s' % logfile
-                logger.info(msg)
-                return logger
-            except:
-                print 'Log configuration failed' 
-                return None
+            logging.basicConfig(filename=logfile, level=loglevel)
+            logger = logging.getLogger("oracle_pool")
+            logger.setLevel(loglevel)
+            ch = logging.StreamHandler()
+            ch.setLevel(loglevel)
+            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+            ch.setFormatter(formatter)
+            logger.addHandler(ch)
+            from datetime import datetime
+            msg = '%s #### Started django-oraclepool SQL logging at level %s ####' % (datetime.now(),
+                                                                                         loglevel)
+            logger.info(msg)
+            return logger
     else:
-        print 'No logging set so exceptions will be raised not logged'
+        # 'No logging set'
         return None
 
     # Add sql logging for all requests if DEBUG level
@@ -142,31 +141,6 @@ class DatabaseFeatures(OracleDatabaseFeatures):
     uses_case_insensitive_names = True
     time_field_needs_date = True
     date_field_supports_time_value = False
-
-class DatabasePool:
-    """ Core connection pool """
-    def __get__(self):
-        if hasattr(self,'_pool'):
-            return self._pool
-        else:
-            if len(settings.DATABASE_HOST.strip()) == 0:
-                settings.DATABASE_HOST = 'localhost'
-            if len(settings.DATABASE_PORT.strip()) != 0:
-                dsn = Database.makedsn(settings.DATABASE_HOST, int(settings.DATABASE_PORT), settings.DATABASE_NAME)
-            else:
-                dsn = settings.DATABASE_NAME
-            self._pool = cx_Oracle.SessionPool(settings.DATABASE_USER, 
-                                     settings.DATABASE_PASSWORD, 
-                                     dsn, 
-                                     DATABASE_EXTRAS['min'], 
-                                     DATABASE_EXTRAS['max'], 
-                                     DATABASE_EXTRAS['increment'],
-                                     threaded = DATABASE_EXTRAS['threaded'], 
-                                     homogeneous = DATABASE_EXTRAS['homogeneous'])
-            if DATABASE_EXTRAS['timeout']:
-                self._pool.timeout = DATABASE_EXTRAS['timeout']
-            return self._pool
-
 
 class DatabaseWrapper(BaseDatabaseWrapper):
     """ This provides the core connection object wrapper
@@ -241,30 +215,48 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 Database.OPT_Threading = 1
             else:
                 Database.OPT_Threading = 0
-            if len(settings.DATABASE_HOST.strip()) == 0:
-                settings.DATABASE_HOST = 'localhost'
-            if len(settings.DATABASE_PORT.strip()) != 0:
-                dsn = Database.makedsn(settings.DATABASE_HOST, int(settings.DATABASE_PORT), settings.DATABASE_NAME)
-            else:
-                dsn = settings.DATABASE_NAME
+            # Use 1.2 style dict if its there, else make one
             try:
-                p = Database.SessionPool(settings.DATABASE_USER, 
-                                         settings.DATABASE_PASSWORD, 
-                                         dsn, 
-                                         DATABASE_EXTRAS['min'], 
-                                         DATABASE_EXTRAS['max'], 
-                                         DATABASE_EXTRAS['increment'],
-                                         threaded = DATABASE_EXTRAS['threaded'], 
-                                         homogeneous = DATABASE_EXTRAS['homogeneous'])
+                settings_dict = self.creation.connection.settings_dict
             except:
-                print "##### Database '%s' login failed or database not found #####" % settings.DATABASE_NAME
-                print "dsn = %s" % dsn
-                print 'Django start up cancelled'
-                sys.exit(1)
-            if DATABASE_EXTRAS['timeout']:
-                p.timeout = DATABASE_EXTRAS['timeout']
-            setattr(self.__class__, '_pool', p)
+                settings_dict = None
+            if not settings_dict:
+                settings_dict = {'HOST':settings.DATABASE_HOST,
+                                 'PORT':settings.DATABASE_PORT,
+                                 'NAME':settings.DATABASE_NAME,
+                                 'USER':settings.DATABASE_USER, 
+                                 'PASSWORD':settings.DATABASE_PASSWORD, 
+                                 }
+            if len(settings_dict.get('HOST','').strip()) == 0:
+                settings_dict['HOST'] = 'localhost'
+            if len(settings_dict.get('PORT','').strip()) != 0:
+                dsn = Database.makedsn(settings_dict['HOST'],
+                                       int(settings_dict['PORT']),
+                                       settings_dict.get('NAME',''))
+            else:
+                dsn = settings_dict.get('NAME','')
 
+            try:
+                p = Database.SessionPool(settings_dict.get('USER',''), 
+                                         settings_dict.get('PASSWORD',''), 
+                                         dsn, 
+                                         DATABASE_EXTRAS.get('min',4), 
+                                         DATABASE_EXTRAS.get('max',8), 
+                                         DATABASE_EXTRAS.get('increment',1),
+                                         threaded = DATABASE_EXTRAS.get('threaded',True))
+            except Exception, err:
+                p = None
+            if p:
+                if DATABASE_EXTRAS.get('timeout',0):
+                    p.timeout = DATABASE_EXTRAS['timeout']
+                setattr(self.__class__, '_pool', p)
+            else:
+                msg = """##### Database '%s' login failed or database not found ##### 
+                         Using settings: %s 
+                         Django start up cancelled
+                      """ % (settings_dict.get('NAME','None'), settings_dict)
+                print msg
+                print '\n##### DUE TO ERROR: %s\n' % err
         return getattr(self.__class__, '_pool')
         
     pool = property (_get_pool)

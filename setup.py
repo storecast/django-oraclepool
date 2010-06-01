@@ -6,9 +6,9 @@ version = '0.5'
 setup(name='django-oraclepool',
       version=version,
       description="django database backend that uses cx_Oracle session pooling for connections",
-      long_description=open("README.rst").read() + "\n" +
-                       open(os.path.join("docs", "TODO.rst")).read() + "\n" +      
-                       open(os.path.join("docs", "HISTORY.rst")).read(),      
+      long_description=open("README.txt").read() + "\n" +
+                       open(os.path.join("docs", "TODO.txt")).read() + "\n" +      
+                       open(os.path.join("docs", "HISTORY.txt")).read(),      
       # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
         "Programming Language :: Python",
@@ -19,7 +19,7 @@ setup(name='django-oraclepool',
       keywords='django oracle connection pooling cx_Oracle',
       author='Ed Crewe, Taras Halturin',
       author_email='ed.crewe@bris.ac.uk',
-      url='http://bitbucket.org/edcrewe/django-oraclepool/',
+      url='http://bitbucket.org/edcrewe/django-oraclepool',
       license='Apache',
       packages=['oraclepool'],
       include_package_data=True,

@@ -87,18 +87,24 @@ class DatabaseCreation(OracleDatabaseCreation):
 
     def _drop_test_tables(self):
         """ Individually delete the test tables """
+        from django.db import connection, transaction
+        cursor = connection.cursor()
         try:
-            from django.db import connection, transaction
-            cursor = connection.cursor()
             for table in self.list_test_tables():
                 statement = "drop table " + table + " cascade constraints purge"
-                cursor.execute(statement)
+                try:
+                    cursor.execute(statement)
+                except:
+                    pass
                 statement = "drop sequence " + table + "_SQ"
-                cursor.execute(statement)            
+                try:
+                    cursor.execute(statement)            
+                except:
+                    pass
                 print 'Deleted table and sequence %s' % table
             transaction.commit_unless_managed()            
-        except:
-            print 'Couldnt acquire transaction to delete test tables'
+        except Exception, err:
+            print 'Couldnt acquire transaction to delete test tables due to error: %s' % err
         return
 
     def _delete_test_users(self):
