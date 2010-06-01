@@ -7,6 +7,8 @@ Ed Crewe, `ILRT
 Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
 django database backend that uses cx_Oracle session pooling for connections
 
+See http://bitbucket.org/edcrewe/django-oraclepool
+
 Original Code Modifications
 ---------------------------
 
@@ -59,7 +61,6 @@ are used
 >>> DEFAULT_EXTRAS = {'min':4,        # starting number of pooled connections
 ...                  'max':8,         # maximum number of connections in the pool
 ...                  'increment':1,   # increase by this amount when more are needed
-...                  'homogeneous':1, # 1 = single credentials, 0 = multiple credentials
 ...                  'threaded':True, # server platform optimisation 
 ...                  'timeout':600,   # connection timeout, 600 = 10 mins
 ...                  'log':0,         # extra logging functionality turned on

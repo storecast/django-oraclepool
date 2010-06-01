@@ -1,10 +1,17 @@
 Changelog
 =========
 
-0.6 - UNRELEASED
-----------------
+0.6 - Minor bugs and django 1.2 compatibility fixes UNRELEASED
+---------------------------------------------------------------
 
+- Use django 1.2 database settings format by default
 - Fix a bug with adding sql log to page when in DEBUG
+- Remove print statements where not critical failiure since they will cause one with wsgi
+- Drop homogeneous extra argument since unecessary and breaks if used with earlier cx_Oracle
+- Fix tests for earlier cx_Oracle
+- Remove unused separate class declaration for pools
+
+  [Ed Crewe]
 
 0.5 - Fix logger bug and add session config (2010-02-19)
 --------------------------------------------------------
