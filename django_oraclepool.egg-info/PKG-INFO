@@ -2,7 +2,7 @@ Metadata-Version: 1.0
 Name: django-oraclepool
 Version: 0.5
 Summary: django database backend that uses cx_Oracle session pooling for connections
-Home-page: http://code.djangoproject.com/ticket/7732
+Home-page: http://bitbucket.org/edcrewe/django-oraclepool/
 Author: Ed Crewe, Taras Halturin
 Author-email: ed.crewe@bris.ac.uk
 License: Apache
@@ -79,6 +79,10 @@ Description: ILRT Django Oracle pool
         ...				       #   alter session set session_cached_cursors = 20;
         ...                                    #   Allows cursor reuse between queries
         ...                  }
+        
+        Note that if you want sql logging to screen when in DEBUG mode then add
+        'oraclepool.log_sql.SQLLogMiddleware' to your MIDDLEWARE_CLASSES
+        
         
         General Performance
         -------------------
@@ -159,6 +163,11 @@ Description: ILRT Django Oracle pool
         
         Changelog
         =========
+        
+        0.6 - UNRELEASED
+        ----------------
+        
+        - Fix a bug with adding sql log to page when in DEBUG
         
         0.5 - Fix logger bug and add session config (2010-02-19)
         --------------------------------------------------------

@@ -1,4 +1,3 @@
-README.txt
 setup.cfg
 setup.py
 django_oraclepool.egg-info/PKG-INFO
@@ -8,9 +7,7 @@ django_oraclepool.egg-info/entry_points.txt
 django_oraclepool.egg-info/not-zip-safe
 django_oraclepool.egg-info/requires.txt
 django_oraclepool.egg-info/top_level.txt
-docs/HISTORY.txt
 docs/LOG_SESSION_CONFIGS.txt
-docs/TODO.txt
 docs/get_log_avg.sh
 oraclepool/__init__.py
 oraclepool/base.py
