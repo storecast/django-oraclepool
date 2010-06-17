@@ -9,7 +9,7 @@ try:
     from django.db.backends.signals import connection_created
 except:
     connection_created = None
-# Makes it explicit where the default oracle versions fo these components are used
+# Makes it explicit where the default oracle versions of these components are used
 from django.db.backends.oracle.base import OracleParam
 from django.db.backends.oracle.base import DatabaseFeatures as OracleDatabaseFeatures
 from django.db.backends.oracle.base import DatabaseOperations as OracleDatabaseOperations
@@ -65,7 +65,7 @@ def get_extras(database='default'):
         db = settings.DATABASES.get(database,{})
         if db.has_key('EXTRAS'):
             return db['EXTRAS']
-    elif hasattr(settings, 'DATABASE_EXTRAS'):
+    if hasattr(settings, 'DATABASE_EXTRAS'):
         return settings.DATABASE_EXTRAS
     else:
         return DEFAULT_EXTRAS
@@ -135,7 +135,6 @@ class DatabaseFeatures(OracleDatabaseFeatures):
     """
     uses_savepoints = False
     can_return_id_from_insert = False
-    
     allows_group_by_ordinal = False
     supports_tablespaces = True
     uses_case_insensitive_names = True
