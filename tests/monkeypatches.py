@@ -6,6 +6,8 @@ from datetime import datetime
 # so it can be tested against an existing db too. See settings.
 if settings.DATABASES['oracle']['EXTRAS'].get('existing',''):
 
+    print 'Monkey patching for using existing database for tests'
+
     def _create_test_db(self, verbosity=1, autoclobber=False):
         """ if existing is set then this uses the settings database
             for testing rather than creating a new one

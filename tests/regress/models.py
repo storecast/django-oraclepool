@@ -3,7 +3,6 @@ import decimal
 from django.db import models, IntegrityError
 from django.test import TestCase
 from django.core.paginator import Paginator
-from sqlserver_ado.fields import BigAutoField, BigIntegerField, BigForeignKey
 
 class Bug19Table(models.Model):
     """ A simple model for testing string comparisons.
@@ -305,36 +304,6 @@ class Bug62TestCase(TestCase):
         q = list(Bug62Table.objects.exclude(email=u''))
         self.assertEqual(len(q), 2)
 
-class Bug63Table(models.Model):
-    """
-    Test that the BigAutoField and BigIntegerField fields work.
-
-    >>> Bug63Table(number=2147483648L).save()
-    >>> len(list(Bug63Table.objects.all()))
-    1
-    >>> big = Bug63Table.objects.get(number=2147483648L)
-    >>> big.number
-    2147483648L
-    """
-    id = BigAutoField(primary_key=True)
-    number = BigIntegerField()
-
-class Bug64Table(models.Model):
-    """
-    Test that a BigForeignKey works as intended.
-    
-    >>> a = Bug63Table(number=2147483648L)
-    >>> a.save()
-    >>> b = Bug64Table(key=a)
-    >>> b.save()
-    >>> a == b.key
-    True
-    >>> b.key.number == 2147483648L
-    True
-    """
-    
-    key = BigForeignKey(Bug63Table)
-
 
 class Bug66Table(models.Model):
     """
@@ -379,18 +348,3 @@ class Bug69Table2(models.Model):
     # db_column is camelcase here
     related_obj = models.ForeignKey(Bug69Table1, db_column='Table1Id')
     
-
-class MyAutoField(models.AutoField): pass
-
-class Bug70Table(models.Model):
-	"""
-	Test that insert works with subclasses of AutoField.
-	
-    >>> Bug70Table(a=100).save()
-    >>> Bug70Table(a=101).save()
-    >>> Bug70Table(a=102).save()
-    >>> len(list(Bug70Table.objects.all()))
-    3
-	"""
-	id = models.MyAutoField(primary_key=True, db_column="Table70Id")
-	a = models.IntegerField()

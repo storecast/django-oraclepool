@@ -371,7 +371,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if logger:
                 logger.critical(err)
             else:
-                raise err
+                print str(err)
 
     def executemany(self, query, params=[]):
         try:

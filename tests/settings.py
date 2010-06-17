@@ -3,24 +3,17 @@
 
 # Set up common credentials for testing
 # oraclepool vs. oracle functionality & performance 
-CREDENTIALS = {'USER' : 'SCOTT',      
-               'NAME' : 'SCOTT',             
-               'PASSWORD' : 'TIGER',     
-               'HOST' : 'localhost', 
-               'PORT' : '1521',            
-               'OPTIONS' : {}
-               }
-
-import sys
 try:
-    print 'Using a Bristol Uni Oracle Beta test server' 
-    sys.path.append('/usr/local/packages/eggserver/uobcms.django')
-    from uobcms.django.settings import DATABASES as CRED
-    for k in CREDENTIALS.keys():
-        CREDENTIALS[k] = CRED['beta'].get(k,'')
+    from cred import CREDENTIALS
 except:
-    print 'Using settings in django-oraclepool/tests/settings.py'
-    
+    CREDENTIALS = {'USER' : 'SCOTT',      
+                   'NAME' : 'SCOTT',             
+                   'PASSWORD' : 'TIGER',     
+                   'HOST' : 'localhost', 
+                   'PORT' : '1521',            
+                   'OPTIONS' : {}
+                   }
+
 # NB: Oracle already has OPTIONS dict so use EXTRAS for pooling and logging
 EXTRAS = {'min':4,         # start number of connections
           'max':8,         # max number of connections
@@ -139,7 +132,7 @@ TEMPLATE_DIRS = (
 INSTALLED_APPS = (
     'performance',
     'apitest',
-    'regressiontests',
+    'regress',
     'slicing',
     'nulls',
     'aggregates'
