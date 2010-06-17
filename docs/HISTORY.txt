@@ -10,6 +10,8 @@ Changelog
 - Drop homogeneous extra argument since unecessary and breaks if used with earlier cx_Oracle
 - Fix tests for earlier cx_Oracle
 - Remove unused separate class declaration for pools
+- Make sure all tests pass
+- Ensure default settings are picked up when using old format settings with 1.2 [Marc Bee]
 
   [Ed Crewe]
 
