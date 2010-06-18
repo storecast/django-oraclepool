@@ -1,8 +1,11 @@
 Changelog
 =========
 
-0.6 - Minor bugs and django 1.2 compatibility fixes UNRELEASED
----------------------------------------------------------------
+0.7 - Nothing yet (UNRELEASED)
+------------------------------
+
+0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
+----------------------------------------------------------------
 
 - Use django 1.2 database settings format by default
 - Fix a bug with adding sql log to page when in DEBUG
