@@ -1,8 +1,8 @@
 Metadata-Version: 1.0
 Name: django-oraclepool
-Version: 0.5
+Version: 0.6
 Summary: django database backend that uses cx_Oracle session pooling for connections
-Home-page: http://bitbucket.org/edcrewe/django-oraclepool/
+Home-page: http://bitbucket.org/edcrewe/django-oraclepool
 Author: Ed Crewe, Taras Halturin
 Author-email: ed.crewe@bris.ac.uk
 License: Apache
@@ -14,6 +14,8 @@ Description: ILRT Django Oracle pool
         
         Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
         django database backend that uses cx_Oracle session pooling for connections
+        
+        See http://bitbucket.org/edcrewe/django-oraclepool
         
         Original Code Modifications
         ---------------------------
@@ -67,7 +69,6 @@ Description: ILRT Django Oracle pool
         >>> DEFAULT_EXTRAS = {'min':4,        # starting number of pooled connections
         ...                  'max':8,         # maximum number of connections in the pool
         ...                  'increment':1,   # increase by this amount when more are needed
-        ...                  'homogeneous':1, # 1 = single credentials, 0 = multiple credentials
         ...                  'threaded':True, # server platform optimisation
         ...                  'timeout':600,   # connection timeout, 600 = 10 mins
         ...                  'log':0,         # extra logging functionality turned on
@@ -164,10 +165,22 @@ Description: ILRT Django Oracle pool
         Changelog
         =========
         
-        0.6 - UNRELEASED
-        ----------------
+        0.7 - Nothing yet (UNRELEASED)
+        ------------------------------
         
+        0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
+        ----------------------------------------------------------------
+        
+        - Use django 1.2 database settings format by default
         - Fix a bug with adding sql log to page when in DEBUG
+        - Remove print statements where not critical failiure since they will cause one with wsgi
+        - Drop homogeneous extra argument since unecessary and breaks if used with earlier cx_Oracle
+        - Fix tests for earlier cx_Oracle
+        - Remove unused separate class declaration for pools
+        - Make sure all tests pass
+        - Ensure default settings are picked up when using old format settings with 1.2 [Marc Bee]
+        
+        [Ed Crewe]
         
         0.5 - Fix logger bug and add session config (2010-02-19)
         --------------------------------------------------------
