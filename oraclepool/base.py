@@ -57,6 +57,7 @@ def get_extras(database='default'):
                       'log':0,         # extra logging functionality
                       'logpath':'',    # file system path for oraclepool.log file
                       'existing':'',   # Type modifications if using existing database data
+                      'like':'LIKEC',  # Use LIKE or LIKEC - Oracle ignores index for LIKEC on older dbs
                       'session':[]     # Add session optimisations applied to each fresh connection, eg.
                                        #   ['alter session set cursor_sharing = similar',
                                        #    'alter session set session_cached_cursors = 20']
@@ -180,7 +181,11 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             version - tested with both 1.0 and 1.2
         """
         super(DatabaseWrapper, self).__init__(*args, **kwargs)
-
+        if DATABASE_EXTRAS.get('like', 'LIKEC') != 'LIKEC':
+            for key in ['contains','icontains',
+                         'startswith','istartswith',
+                         'endswith','iendswith']:
+                self.operators[key] = self.operators[key].replace('LIKEC',DATABASE_EXTRAS['like'])
         self.features = DatabaseFeatures()
         self.ops = OracleDatabaseOperations()
         self.client = OracleDatabaseClient(self)
