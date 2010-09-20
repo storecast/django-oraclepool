@@ -230,7 +230,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     settings_dict = self.creation.connection.settings_dict
                 except:
                     settings_dict = None
-                if not settings_dict:
+
+                if not settings_dict.get('NAME',''):
                     settings_dict = {'HOST':settings.DATABASE_HOST,
                                      'PORT':settings.DATABASE_PORT,
                                      'NAME':settings.DATABASE_NAME,
