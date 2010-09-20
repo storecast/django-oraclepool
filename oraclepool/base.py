@@ -97,7 +97,7 @@ def get_logger(extras):
             logfile = os.path.join(os.path.abspath(os.path.dirname(logfile)),filename)
         # if log file is writable do it
         if not logfile:
-            raise 'Log path %s not found' % extras.get('logpath','')
+            raise Exception('Log path %s not found' % extras.get('logpath',''))
             return None
         else:
             logging.basicConfig(filename=logfile, level=loglevel)
@@ -310,7 +310,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             if logger:
                 logger.critical('Pool couldnt be created')
             else:
-                raise 'Pool couldnt be created'
+                raise Exception('Pool couldnt be created')
             
         if not cursor:
             cursor = FormatStylePlaceholderCursor(self.connection)
@@ -356,7 +356,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
                 if logger:
                     logger.critical(err)
                 else:
-                    raise str(err)
+                    raise Exception(err)
                 
     def execute(self, query, params=[]):
         if params is None:
@@ -376,7 +376,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if logger:
                 logger.critical(err)
             else:
-                raise str(err)
+                raise 
 
     def executemany(self, query, params=[]):
         try:
@@ -397,4 +397,4 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if logger:
                 logger.critical('%s due to query:%s' % (e, query))                
             else:
-                raise str(e)
+                raise 

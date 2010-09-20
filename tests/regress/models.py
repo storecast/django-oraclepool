@@ -204,7 +204,7 @@ class Bug37TestCase(TestCase):
             Bug37ATable(pk=1, a='a', b='b', c='c').save(force_insert=True)
         except Exception, e:
             self.failUnless(isinstance(e, IntegrityError) or str(e).find('ORA-00001')>-1,
-                            'Expected IntegrityError but got: %s' % type(e))
+                            'Expected IntegrityError but got: %s - %s' % (type(e),str(e)))
             
     def testDeleteRelatedRecordFails(self):
         a2 = Bug37ATable(a='a', b='b', c='c')
