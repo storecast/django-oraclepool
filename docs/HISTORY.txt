@@ -13,7 +13,7 @@ Changelog
 - Lost an indent along the way for log_sql append to screen
   [kylen]
 - Fix multiple pool creation bug under heavy initial load - with locking
-  [Anonymous]
+  [Aa`Koshh]
 
 0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
 ----------------------------------------------------------------
