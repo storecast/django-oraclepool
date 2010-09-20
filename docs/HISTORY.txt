@@ -6,8 +6,9 @@ Changelog
 
 - Optional switch of use of LIKEC for LIKE since LIKEC ignores indexes in old Oracle
   so has much worse performance, see http://code.djangoproject.com/ticket/11017
-
   [Ed Crewe]
+- Clean up raising of strings, required for python 2.6 or higher
+  [Reinout van Rees]
 
 0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
 ----------------------------------------------------------------
