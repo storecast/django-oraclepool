@@ -50,11 +50,11 @@ class SQLLogMiddleware:
                                                    'count':len(connection.queries),
                                                    'time':time}))
 
-                if response.content.find('</body>') == -1:
-                    response.content += content
-                else:
-                    response.content = response.content.replace('</body>',
-                                                  "%s%s" % (content,'</body>'))
+                    if response.content.find('</body>') == -1:
+                        response.content += content
+                    else:
+                        response.content = response.content.replace('</body>',
+                                                      "%s%s" % (content,'</body>'))
 
             if logger:
                 logger.debug('%s SQL log for %s -----------------------' % (datetime.now(),

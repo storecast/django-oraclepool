@@ -4,6 +4,7 @@ Requires cx_Oracle: http://www.python.net/crew/atuining/cx_Oracle/
 """
 
 import os, sys
+import thread
 from django.db.backends import BaseDatabaseWrapper, BaseDatabaseValidation, util
 try:
     from django.db.backends.signals import connection_created
@@ -213,54 +214,60 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return self.poolprops
 
     def _get_pool (self):
-        """ Get the connection pool or create it if it doesnt exist """
+        """ Get the connection pool or create it if it doesnt exist
+            Add thread lock to prevent server initial heavy load creating multiple pools
+        """
         if not hasattr (self.__class__, '_pool'):
-            if DATABASE_EXTRAS['threaded']:
-                Database.OPT_Threading = 1
-            else:
-                Database.OPT_Threading = 0
-            # Use 1.2 style dict if its there, else make one
-            try:
-                settings_dict = self.creation.connection.settings_dict
-            except:
-                settings_dict = None
-            if not settings_dict:
-                settings_dict = {'HOST':settings.DATABASE_HOST,
-                                 'PORT':settings.DATABASE_PORT,
-                                 'NAME':settings.DATABASE_NAME,
-                                 'USER':settings.DATABASE_USER, 
-                                 'PASSWORD':settings.DATABASE_PASSWORD, 
-                                 }
-            if len(settings_dict.get('HOST','').strip()) == 0:
-                settings_dict['HOST'] = 'localhost'
-            if len(settings_dict.get('PORT','').strip()) != 0:
-                dsn = Database.makedsn(settings_dict['HOST'],
-                                       int(settings_dict['PORT']),
-                                       settings_dict.get('NAME',''))
-            else:
-                dsn = settings_dict.get('NAME','')
+            lock = thread.allocate_lock()
+            lock.acquire()
+            if not hasattr (self.__class__, '_pool'):            
+                if DATABASE_EXTRAS['threaded']:
+                    Database.OPT_Threading = 1
+                else:
+                    Database.OPT_Threading = 0
+                # Use 1.2 style dict if its there, else make one
+                try:
+                    settings_dict = self.creation.connection.settings_dict
+                except:
+                    settings_dict = None
+                if not settings_dict:
+                    settings_dict = {'HOST':settings.DATABASE_HOST,
+                                     'PORT':settings.DATABASE_PORT,
+                                     'NAME':settings.DATABASE_NAME,
+                                     'USER':settings.DATABASE_USER, 
+                                     'PASSWORD':settings.DATABASE_PASSWORD, 
+                                     }
+                if len(settings_dict.get('HOST','').strip()) == 0:
+                    settings_dict['HOST'] = 'localhost'
+                if len(settings_dict.get('PORT','').strip()) != 0:
+                    dsn = Database.makedsn(settings_dict['HOST'],
+                                           int(settings_dict['PORT']),
+                                           settings_dict.get('NAME',''))
+                else:
+                    dsn = settings_dict.get('NAME','')
 
-            try:
-                p = Database.SessionPool(settings_dict.get('USER',''), 
-                                         settings_dict.get('PASSWORD',''), 
-                                         dsn, 
-                                         DATABASE_EXTRAS.get('min',4), 
-                                         DATABASE_EXTRAS.get('max',8), 
-                                         DATABASE_EXTRAS.get('increment',1),
-                                         threaded = DATABASE_EXTRAS.get('threaded',True))
-            except Exception, err:
-                p = None
-            if p:
-                if DATABASE_EXTRAS.get('timeout',0):
-                    p.timeout = DATABASE_EXTRAS['timeout']
-                setattr(self.__class__, '_pool', p)
-            else:
-                msg = """##### Database '%s' login failed or database not found ##### 
-                         Using settings: %s 
-                         Django start up cancelled
-                      """ % (settings_dict.get('NAME','None'), settings_dict)
-                print msg
-                print '\n##### DUE TO ERROR: %s\n' % err
+                try:
+                    p = Database.SessionPool(settings_dict.get('USER',''), 
+                                             settings_dict.get('PASSWORD',''), 
+                                             dsn, 
+                                             DATABASE_EXTRAS.get('min',4), 
+                                             DATABASE_EXTRAS.get('max',8), 
+                                             DATABASE_EXTRAS.get('increment',1),
+                                             threaded = DATABASE_EXTRAS.get('threaded',True))
+                except Exception, err:
+                    p = None
+                if p:
+                    if DATABASE_EXTRAS.get('timeout',0):
+                        p.timeout = DATABASE_EXTRAS['timeout']
+                    setattr(self.__class__, '_pool', p)
+                else:
+                    msg = """##### Database '%s' login failed or database not found ##### 
+                             Using settings: %s 
+                             Django start up cancelled
+                          """ % (settings_dict.get('NAME','None'), settings_dict)
+                    print msg
+                    print '\n##### DUE TO ERROR: %s\n' % err
+                lock.release()
         return getattr(self.__class__, '_pool')
         
     pool = property (_get_pool)

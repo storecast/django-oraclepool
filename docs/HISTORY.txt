@@ -1,14 +1,19 @@
 Changelog
 =========
 
-0.7 - Old oracle compatibility (UNRELEASED)
--------------------------------------------
+0.7 - Oracle LIKEC performance work around and bug fixes (2010-09-20)
+---------------------------------------------------------------------
 
 - Optional switch of use of LIKEC for LIKE since LIKEC ignores indexes in old Oracle
   so has much worse performance, see http://code.djangoproject.com/ticket/11017
+- Tested an application and the test suite with django 1.2.3 and python 2.6 
   [Ed Crewe]
 - Clean up raising of strings, required for python 2.6 or higher
   [Reinout van Rees]
+- Lost an indent along the way for log_sql append to screen
+  [kylen]
+- Fix multiple pool creation bug under heavy initial load - with locking
+  [Anonymous]
 
 0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
 ----------------------------------------------------------------
