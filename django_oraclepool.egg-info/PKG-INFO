@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: django-oraclepool
-Version: 0.6
+Version: 0.7
 Summary: django database backend that uses cx_Oracle session pooling for connections
 Home-page: http://bitbucket.org/edcrewe/django-oraclepool
 Author: Ed Crewe, Taras Halturin
@@ -10,7 +10,7 @@ Description: ILRT Django Oracle pool
         =======================
         
         Ed Crewe, `ILRT
-        <http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, June 2010
+        <http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, September 2010
         
         Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
         django database backend that uses cx_Oracle session pooling for connections
@@ -20,86 +20,87 @@ Description: ILRT Django Oracle pool
         Original Code Modifications
         ---------------------------
         
-        Pruned original ticket's base.py to just hold the pooling relevant code.
-        Using the standard Oracle connection for the rest of the database classes,
-        ie. operations, client and introspection.
+        Pruned original ticket's base.py to just hold the pooling relevant code. 
+        Using the standard Oracle connection for the rest of the database classes, 
+        ie. operations, client and introspection. 
         
-        Tested with django 1.1 and 1.2, deals with the differences eg. to settings
-        handling.
+        Tested with django 1.1.0 to 1.2.3 python 2.5 and 2.6 deals with the differences 
+        to settings handling, etc. 
         
         Extra features
         --------------
         
         - Added the pooling and logging parameters to the settings.
         
-        - The connector uses the standard python logging model and caters for logging
-        full details of queries, either to a file log or appending them to the
-        bottom of the screen if the log level is DEBUG.
+        - The connector uses the standard python logging model and caters for logging 
+          full details of queries, either to a file log or appending them to the 
+          bottom of the screen if the log level is DEBUG.
         
-        - Added an option for running against existing (older) Oracle databases, ie those
-        which may not have unicode for character fields.
+        - Added an option for running against existing (older) Oracle databases, ie those 
+          which may not have unicode for character fields.
         
-        - Option also allows running the tests against an existing database so that
-        running tests doesnt require database creation (oracle sys dba) rights.
+        - Option also allows running the tests against an existing database so that 
+          running tests doesnt require database creation (oracle sys dba) rights.
         
         - Added a modification to the cursor to not parse parameters if not required.
         
         Why use it?
         -----------
         
-        Perhaps due to our remotely distributed Oracle network taking a very long time
-        to establish connections, the use of cx_Oracle's session pooling for
-        connections provided a truely radical performance boost for requests
-        from 3-4 secs/req to 0.4 secs/req, so many times faster.
+        Perhaps due to our remotely distributed Oracle network taking a very long time 
+        to establish connections, the use of cx_Oracle's session pooling for 
+        connections provided a truely radical performance boost for requests 
+        from 3-4 secs/req to 0.4 secs/req, so many times faster.   
         
-        For single direct Oracle access it might still give a doubling of performance.
+        For single direct Oracle access it might still give a doubling of performance. 
         Install it and run the performance test to find out (see below).
         
         Installation
         ------------
         
-        Download the egg (or use buildout) or download the tarball and extract it.
+        Download the egg (or use buildout) or download the tarball and extract it. 
         Then add /path/to/django-oraclepool to your python path.
         
-        Specify DATABASE_ENGINE = 'oraclepool' instead of 'oracle' in your settings.
+        Specify DATABASE_ENGINE = 'oraclepool' instead of 'oracle' in your settings.  
         
         If you dont want to use the default extra database settings then the following defaults
         are used
         
-        >>> DEFAULT_EXTRAS = {'min':4,        # starting number of pooled connections
-        ...                  'max':8,         # maximum number of connections in the pool
-        ...                  'increment':1,   # increase by this amount when more are needed
-        ...                  'threaded':True, # server platform optimisation
-        ...                  'timeout':600,   # connection timeout, 600 = 10 mins
-        ...                  'log':0,         # extra logging functionality turned on
-        ...                  'logfile':'',    # file system path to log file
-        ...                  'existing':''    # Type modifications for existing database and flag for tests
-        ...                  'session':[]     # Add session optimisations applied to each fresh connection, eg.
-        ...                                    #   alter session set cursor_sharing = similar;
-        ...                                    #   Enables use of bind variables assuming it isnt set at a system level
-        ...				       #   alter session set session_cached_cursors = 20;
-        ...                                    #   Allows cursor reuse between queries
-        ...                  }
+        >>> EXTRAS = {'min':4,        # starting number of pooled connections
+        ...           'max':8,         # maximum number of connections in the pool
+        ...           'increment':1,   # increase by this amount when more are needed
+        ...           'threaded':True, # server platform optimisation 
+        ...           'timeout':600,   # connection timeout, 600 = 10 mins
+        ...           'log':0,         # extra logging functionality turned on
+        ...           'logfile':'',    # file system path to log file
+        ...           'existing':''    # Type modifications for existing database and flag for tests
+        ...           'session':[]     # Add session optimisations applied to each fresh connection, eg.
+        ...                            #   alter session set cursor_sharing = similar;
+        ...                            #   Enables use of bind variables assuming it isnt set at a system level 
+        ...			       #   alter session set session_cached_cursors = 20;
+        ...                            #   Allows cursor reuse between queries   
+        ...            'like':'LIKE'   # Option instead of LIKEC default which can stop indexes being used
+        ...            }
         
-        Note that if you want sql logging to screen when in DEBUG mode then add
+        Note that if you want sql logging to screen when in DEBUG mode then add 
         'oraclepool.log_sql.SQLLogMiddleware' to your MIDDLEWARE_CLASSES
         
         
         General Performance
         -------------------
         
-        Initially after apache restart you will see the first few requests taking the same time as each
-        one initiates a new pooled connection. Then request speed should drop as it loses the Oracle
+        Initially after apache restart you will see the first few requests taking the same time as each 
+        one initiates a new pooled connection. Then request speed should drop as it loses the Oracle 
         connection time.
         
-        NB: Note that if you have PythonDebug On then the pool may get flushed much more regularly.
+        NB: Note that if you have PythonDebug On then the pool may get flushed much more regularly. 
         So you will often get the slower pool populating requests.
         
         Using mod_wsgi rather than mod_python may give a 25% added increase although this needs
         confirmation on a production instance.
         
-        It should be remembered that there is also a very great deal of performance work that can be
-        done at the database level. I have posted a page with some of the tips and tricks for
+        It should be remembered that there is also a very great deal of performance work that can be 
+        done at the database level. I have posted a page with some of the tips and tricks for 
         improving database performance on my blog - http://python.blogs.ilrt.org/database-performance/
         
         Pooling alternatives
@@ -108,20 +109,20 @@ Description: ILRT Django Oracle pool
         Pyora pool
         
         Also tried out pyora pool see http://code.google.com/p/pyorapool
-        but found increase was only around 90% and also had
+        but found increase was only around 90% and also had 
         issues with connection control and database edits failing.
-        This also requires the whole architecture of a separate remote procedure call daemon
+        This also requires the whole architecture of a separate remote procedure call daemon 
         that holds the connection pool. Uneccesary here ... although useful
         for pooling across different applications, or multiple servers.
         
         ORM pools
         
-        Usually ORMs have a generic pooling capability, unfortuately djangos only has a beta one
-        in development, unless you plugin another ORM, eg. http://www.sqlalchemy.org/ instead.
+        Usually ORMs have a generic pooling capability, unfortuately djangos only has a beta one 
+        in development, unless you plugin another ORM, eg. http://www.sqlalchemy.org/ instead. 
         However that does require code rewriting.
         
-        Having said that a generic ORM level pool is unlikely to perform as well as one at the
-        database connector level, which in turn is going to be less fast than one within the
+        Having said that a generic ORM level pool is unlikely to perform as well as one at the 
+        database connector level, which in turn is going to be less fast than one within the 
         database itself (see below).
         
         Tests
@@ -131,19 +132,19 @@ Description: ILRT Django Oracle pool
         Some of these tests are derived from a set for http://code.google.com/p/django-mssql/
         
         They also include the option to run the test suite against an existing database for users who dont
-        have full oracle dba rights on their test oracle servers.
+        have full oracle dba rights on their test oracle servers. 
         
         The key extra tests are performance timings for running the test suite via the pooled oracle
         connection vs the standard one. Hopefully these timings should indicate whether using oraclepool is
-        of value when using django with your oracle server network.
+        of value when using django with your oracle server network. 
         
-        Run the tests by running django-oraclepool/tests/manage.py test
+        Run the tests by running django-oraclepool/tests/manage.py test 
         Or run individual tests by supplying there name, eg. manage.py test performance
         
         The performance test simulates a real environment by running up a number of connections
         as would exist with a production web server (the Apache2 default is 2 processes * 64 threads)
         whilst the test creates a maximum of only 32.
-        In practise I found the actual performance improvement significantly greater than that indicated
+        In practise I found the actual performance improvement significantly greater than that indicated 
         by the doubling of speed that the multiple connections performance test gives. However that
         may not be the case dependent on your production oracle and web server environment.
         
@@ -157,16 +158,29 @@ Description: ILRT Django Oracle pool
         ----
         
         - Oracle 11g has internal session pooling - DRCP - and cx_Oracle can use that for
-        even better performance, so need to add appropriate modification to test whether
-        the database 11g or later, and use this feature in place of a cx_Oracle side pool.
-        NB: requires cx_Oracle 5, see http://www.oracle.com/technology/pub/articles/tuininga-cx_oracle.html
+          even better performance, so need to add appropriate modification to test whether 
+          the database 11g or later, and use this feature in place of a cx_Oracle side pool.
+          NB: requires cx_Oracle 5, see http://www.oracle.com/technology/pub/articles/tuininga-cx_oracle.html
         
         
         Changelog
         =========
         
-        0.7 - Nothing yet (UNRELEASED)
-        ------------------------------
+        0.7 - Oracle LIKEC performance work around and bug fixes (2010-09-20)
+        ---------------------------------------------------------------------
+        
+        - Optional switch of use of LIKEC for LIKE since LIKEC ignores indexes in old Oracle
+          so has much worse performance, see http://code.djangoproject.com/ticket/11017
+        - Tested an application and the test suite with django 1.2.3 and python 2.6 
+          [Ed Crewe]
+        - Clean up raising of strings, required for python 2.6 or higher
+          [Reinout van Rees]
+        - Lost an indent along the way for log_sql append to screen
+          [kylen]
+        - Fix multiple pool creation bug under heavy initial load - with locking
+          [Aa`Koshh]
+        - Fix old settings style with django 1.1 python 
+          [akhenakh]
         
         0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
         ----------------------------------------------------------------
@@ -180,7 +194,7 @@ Description: ILRT Django Oracle pool
         - Make sure all tests pass
         - Ensure default settings are picked up when using old format settings with 1.2 [Marc Bee]
         
-        [Ed Crewe]
+          [Ed Crewe]
         
         0.5 - Fix logger bug and add session config (2010-02-19)
         --------------------------------------------------------
@@ -190,17 +204,17 @@ Description: ILRT Django Oracle pool
         - Add a session list of sql lines for optionally setting session parameters
         - Wrap connection signal in try except for older django compatibility.
         
-        [Ed Crewe]
+          [Ed Crewe]
         
         0.4 - Fix performance test (2010-01-29)
         ---------------------------------------
         
         - Whoops, I realised the performance test was underplaying the improvement due to a bug,
-        it now gives the same performance for single connections (as expected) and 300%
-        improvement for multiple ones.
+          it now gives the same performance for single connections (as expected) and 300% 
+          improvement for multiple ones.
         - Added signal for connection 'creation' and fixed raise of unicode error
         
-        [Ed Crewe]
+          [Ed Crewe]
         
         0.3 - Initial release (2010-01-28)
         ----------------------------------
@@ -208,32 +222,32 @@ Description: ILRT Django Oracle pool
         - Added test suite including performance test to demonstrate benefits
         - Tested and made compatible with django 1.2 (as well as django 1.1)
         - Cleaned up the code and factored out anything that wasnt specific to pooling,
-        subclassing most components from the standard Oracle engine.
-        - Modified logging options so DEBUG switches on log to screen and EXTRAS['log']
-        switches logging to file option separately.
+          subclassing most components from the standard Oracle engine.
+        - Modified logging options so DEBUG switches on log to screen and EXTRAS['log'] 
+          switches logging to file option separately.
         
-        [Ed Crewe]
+          [Ed Crewe]
         
         0.2 - Used for UoB student reps
         -------------------------------
         
         - Commented out debug print statements from DatabaseWrapper._cursor which broke install in wsgi
         - Added DatabaseWrapper.__init__ like the oracle backend with client, creation and introspection
-        borrowed from it, since creation is expected in django 1.1.1 code.
-        - Added default value of None for settings in DatabaseWrapper._cursor since this argument is not
-        expected in django 1.1.1 code.
+          borrowed from it, since creation is expected in django 1.1.1 code.
+        - Added default value of None for settings in DatabaseWrapper._cursor since this argument is not 
+          expected in django 1.1.1 code.
         - Added DATABASE_EXTRAS dictionary to set all the session parameters from django config.
         - Added session pool settings report method, to check these.
         - Added python logger option and sql_log middleware
         
-        [Ed Crewe]
+          [Ed Crewe]
         
         0.1 - Unreleased
         ----------------
         
         * Initial release - packaging of code from http://code.djangoproject.com/ticket/7732
-        
-        [Taras Halturin, et al.]
+         
+          [Taras Halturin, et al.]
         
 Keywords: django oracle connection pooling cx_Oracle
 Platform: UNKNOWN
