@@ -14,6 +14,8 @@ Changelog
   [kylen]
 - Fix multiple pool creation bug under heavy initial load - with locking
   [Aa`Koshh]
+- Fix old settings style with django 1.1 python 
+  [akhenakh]
 
 0.6 - Minor bugs and django 1.2 compatibility fixes (2010-06-18)
 ----------------------------------------------------------------

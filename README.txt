@@ -2,7 +2,7 @@ ILRT Django Oracle pool
 =======================
 
 Ed Crewe, `ILRT
-<http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, June 2010
+<http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, September 2010
 
 Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
 django database backend that uses cx_Oracle session pooling for connections
@@ -16,8 +16,8 @@ Pruned original ticket's base.py to just hold the pooling relevant code.
 Using the standard Oracle connection for the rest of the database classes, 
 ie. operations, client and introspection. 
 
-Tested with django 1.1 and 1.2, deals with the differences eg. to settings
-handling. 
+Tested with django 1.1.0 to 1.2.3 python 2.5 and 2.6 deals with the differences 
+to settings handling, etc. 
 
 Extra features
 --------------
@@ -58,20 +58,21 @@ Specify DATABASE_ENGINE = 'oraclepool' instead of 'oracle' in your settings.
 If you dont want to use the default extra database settings then the following defaults
 are used
 
->>> DEFAULT_EXTRAS = {'min':4,        # starting number of pooled connections
-...                  'max':8,         # maximum number of connections in the pool
-...                  'increment':1,   # increase by this amount when more are needed
-...                  'threaded':True, # server platform optimisation 
-...                  'timeout':600,   # connection timeout, 600 = 10 mins
-...                  'log':0,         # extra logging functionality turned on
-...                  'logfile':'',    # file system path to log file
-...                  'existing':''    # Type modifications for existing database and flag for tests
-...                  'session':[]     # Add session optimisations applied to each fresh connection, eg.
-...                                    #   alter session set cursor_sharing = similar;
-...                                    #   Enables use of bind variables assuming it isnt set at a system level 
-...				       #   alter session set session_cached_cursors = 20;
-...                                    #   Allows cursor reuse between queries   
-...                  }
+>>> EXTRAS = {'min':4,        # starting number of pooled connections
+...           'max':8,         # maximum number of connections in the pool
+...           'increment':1,   # increase by this amount when more are needed
+...           'threaded':True, # server platform optimisation 
+...           'timeout':600,   # connection timeout, 600 = 10 mins
+...           'log':0,         # extra logging functionality turned on
+...           'logfile':'',    # file system path to log file
+...           'existing':''    # Type modifications for existing database and flag for tests
+...           'session':[]     # Add session optimisations applied to each fresh connection, eg.
+...                            #   alter session set cursor_sharing = similar;
+...                            #   Enables use of bind variables assuming it isnt set at a system level 
+...			       #   alter session set session_cached_cursors = 20;
+...                            #   Allows cursor reuse between queries   
+...            'like':'LIKE'   # Option instead of LIKEC default which can stop indexes being used
+...            }
 
 Note that if you want sql logging to screen when in DEBUG mode then add 
 'oraclepool.log_sql.SQLLogMiddleware' to your MIDDLEWARE_CLASSES
