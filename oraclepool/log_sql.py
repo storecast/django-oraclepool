@@ -53,8 +53,11 @@ class SQLLogMiddleware:
                     if response.content.find('</body>') == -1:
                         response.content += content
                     else:
-                        response.content = response.content.replace('</body>',
-                                                      "%s%s" % (content,'</body>'))
+                        try:
+                            response.content = response.content.replace('</body>',
+                                                      u"%s%s" % (content,'</body>'))
+                        except:
+                            pass
 
             if logger:
                 logger.debug('%s SQL log for %s -----------------------' % (datetime.now(),
