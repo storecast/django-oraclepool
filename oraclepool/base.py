@@ -268,6 +268,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                           """ % (settings_dict.get('NAME','None'), settings_dict)
                     print msg
                     print '\n##### DUE TO ERROR: %s\n' % err
+                    return None
                 lock.release()
         return getattr(self.__class__, '_pool')
         
@@ -316,9 +317,9 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 cursor = FormatStylePlaceholderCursor(self.connection)                
         else:
             if logger:
-                logger.critical('Pool couldnt be created')
+                logger.critical('Pool couldnt be created - please check your Oracle connection')
             else:
-                raise Exception('Pool couldnt be created')
+                raise Exception('Pool couldnt be created - please check your Oracle connection')
             
         if not cursor:
             cursor = FormatStylePlaceholderCursor(self.connection)
