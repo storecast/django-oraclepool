@@ -187,7 +187,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                          'startswith','istartswith',
                          'endswith','iendswith']:
                 self.operators[key] = self.operators[key].replace('LIKEC',DATABASE_EXTRAS['like'])
-        self.features = DatabaseFeatures()
+        self.features = DatabaseFeatures(self)
         self.ops = OracleDatabaseOperations()
         self.client = OracleDatabaseClient(self)
         self.creation = DatabaseCreation(self)
