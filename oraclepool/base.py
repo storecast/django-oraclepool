@@ -187,7 +187,11 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                          'startswith','istartswith',
                          'endswith','iendswith']:
                 self.operators[key] = self.operators[key].replace('LIKEC',DATABASE_EXTRAS['like'])
-        self.features = DatabaseFeatures(self)
+        try:        
+            self.features = DatabaseFeatures(self)
+        except:
+            # pre django 1.3
+            self.features = DatabaseFeatures()
         self.ops = OracleDatabaseOperations()
         self.client = OracleDatabaseClient(self)
         self.creation = DatabaseCreation(self)
@@ -317,9 +321,9 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 cursor = FormatStylePlaceholderCursor(self.connection)                
         else:
             if logger:
-                logger.critical('Pool couldnt be created - please check your Oracle connection')
+                logger.critical('Pool couldnt be created - please check your Oracle connection or credentials')
             else:
-                raise Exception('Pool couldnt be created - please check your Oracle connection')
+                raise Exception('Pool couldnt be created - please check your Oracle connection or credentials')
             
         if not cursor:
             cursor = FormatStylePlaceholderCursor(self.connection)
