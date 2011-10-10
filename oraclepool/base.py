@@ -3,15 +3,14 @@ Oracle pooled connection database backend for Django.
 Requires cx_Oracle: http://www.python.net/crew/atuining/cx_Oracle/
 """
 
-import os, sys
+import os
 import thread
-from django.db.backends import BaseDatabaseWrapper, BaseDatabaseValidation, util
+from django.db.backends import BaseDatabaseWrapper, BaseDatabaseValidation
 try:
     from django.db.backends.signals import connection_created
 except:
     connection_created = None
 # Makes it explicit where the default oracle versions of these components are used
-from django.db.backends.oracle.base import OracleParam
 from django.db.backends.oracle.base import DatabaseFeatures as OracleDatabaseFeatures
 from django.db.backends.oracle.base import DatabaseOperations as OracleDatabaseOperations
 from django.db.backends.oracle.client import DatabaseClient as OracleDatabaseClient
@@ -64,9 +63,9 @@ def get_extras(database='default'):
                                        #    'alter session set session_cached_cursors = 20']
                       }
     if hasattr(settings, 'DATABASES'):
-        db = settings.DATABASES.get(database,{})
-        if db.has_key('EXTRAS'):
-            return db['EXTRAS']
+        db_settings = settings.DATABASES.get(database, {})
+        if db_settings.has_key('EXTRAS'):
+            return db_settings['EXTRAS']
     if hasattr(settings, 'DATABASE_EXTRAS'):
         return settings.DATABASE_EXTRAS
     else:
@@ -89,16 +88,16 @@ def get_logger(extras):
         else:
             filename = 'oraclepool.log'
         if os.path.exists(logfile):
-            logfile = os.path.join(logfile,filename)
+            logfile = os.path.join(logfile, filename)
         else:
             logfile = ''
         if not logfile and extras.get('log') > logging.DEBUG:
             logfile = '.'
         if logfile in ['.','..']:
-            logfile = os.path.join(os.path.abspath(os.path.dirname(logfile)),filename)
+            logfile = os.path.join(os.path.abspath(os.path.dirname(logfile)), filename)
         # if log file is writable do it
         if not logfile:
-            raise Exception('Log path %s not found' % extras.get('logpath',''))
+            raise Exception('Log path %s not found' % extras.get('logpath', ''))
             return None
         else:
             logging.basicConfig(filename=logfile, level=loglevel)
@@ -357,6 +356,8 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             Split out this as a function and allowed for no args so
             % signs can be used in the query without requiring parameterization
         """
+#        if query.find('INSERT')> -1:
+#            raise Exception(query) #params[8])
         if query.endswith(';') or query.endswith('/'):
             query = query[:-1]
         if not args:
@@ -389,7 +390,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if logger:
                 logger.critical(err)
             else:
-                raise 
+                raise Exception(err) 
 
     def executemany(self, query, params=[]):
         try:
