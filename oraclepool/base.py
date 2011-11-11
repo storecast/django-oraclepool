@@ -34,9 +34,6 @@ if int(Database.version.split('.', 1)[0]) >= 5 and not hasattr(Database, 'UNICOD
 else:
     convert_unicode = smart_str
 
-DatabaseError = Database.Error
-IntegrityError = Database.IntegrityError
-
 # Oracle takes client-side character set encoding from the environment.
 os.environ['NLS_LANG'] = '.UTF8'
 
@@ -49,7 +46,7 @@ def get_extras(database='default'):
         to Database.version (ie cx_Oracle) < '5.0.0' it breaks and we want
         separate pools for separate credentials anyhow.
     """
-    DEFAULT_EXTRAS = {'min':4,         # start number of connections
+    default_extras = {'min':4,         # start number of connections
                       'max':8,         # max number of connections
                       'increment':1,   # increase by this amount when more are needed
                       'threaded':True, # server platform optimisation 
@@ -69,7 +66,7 @@ def get_extras(database='default'):
     if hasattr(settings, 'DATABASE_EXTRAS'):
         return settings.DATABASE_EXTRAS
     else:
-        return DEFAULT_EXTRAS
+        return default_extras
 
 def get_logger(extras):
     """ Check whether logging is required
@@ -80,7 +77,7 @@ def get_logger(extras):
     """
 
     loglevel = int(extras.get('log', 0))
-    if loglevel>0:
+    if loglevel > 0:
         import logging
         logfile = extras.get('logpath','')
         if logfile.endswith('.log'):
@@ -93,7 +90,7 @@ def get_logger(extras):
             logfile = ''
         if not logfile and extras.get('log') > logging.DEBUG:
             logfile = '.'
-        if logfile in ['.','..']:
+        if logfile in ['.', '..']:
             logfile = os.path.join(os.path.abspath(os.path.dirname(logfile)), filename)
         # if log file is writable do it
         if not logfile:
@@ -101,18 +98,19 @@ def get_logger(extras):
             return None
         else:
             logging.basicConfig(filename=logfile, level=loglevel)
-            logger = logging.getLogger("oracle_pool")
-            logger.setLevel(loglevel)
-            ch = logging.StreamHandler()
-            ch.setLevel(loglevel)
-            formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-            ch.setFormatter(formatter)
-            logger.addHandler(ch)
+            mylogger = logging.getLogger("oracle_pool")
+            mylogger.setLevel(loglevel)
+            chandler = logging.StreamHandler()
+            chandler.setLevel(loglevel)
+            fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            formatter = logging.Formatter(fmt)
+            chandler.setFormatter(formatter)
+            mylogger.addHandler(chandler)
             from datetime import datetime
-            msg = '%s #### Started django-oraclepool SQL logging at level %s ####' % (datetime.now(),
-                                                                                         loglevel)
-            logger.info(msg)
-            return logger
+            msg = '''%s #### Started django-oraclepool 
+                     SQL logging at level %s ####''' % (datetime.now(), loglevel)
+            mylogger.info(msg)
+            return mylogger
     else:
         # 'No logging set'
         return None
@@ -120,9 +118,9 @@ def get_logger(extras):
     # Add sql logging for all requests if DEBUG level
     if extras.get('log') == 10 or settings.DEBUG:
         # Add middleware if needed
-        MIDDLEWARE_CLASSES = list(settings.MIDDLEWARE_CLASSES) 
-        MIDDLEWARE_CLASSES.append('oraclepool.log_sql.SQLLogMiddleware')
-        settings.MIDDLEWARE_CLASSES = tuple(MIDDLEWARE_CLASSES)
+        middleware_classes = list(settings.MIDDLEWARE_CLASSES) 
+        middleware_classes.append('oraclepool.log_sql.SQLLogMiddleware')
+        settings.MIDDLEWARE_CLASSES = tuple(middleware_classes)
 
 DATABASE_EXTRAS = get_extras()
 logger = get_logger(DATABASE_EXTRAS)
@@ -130,7 +128,8 @@ logger = get_logger(DATABASE_EXTRAS)
 class DatabaseFeatures(OracleDatabaseFeatures):
     """ Add extra options from default Oracle ones
         Plus switch off save points and id return
-        See http://groups.google.com/group/django-developers/browse_thread/thread/bca33ecf27ff5d63
+        See 
+        http://groups.google.com/group/django-developers/browse_thread/thread/bca33ecf27ff5d63
         Savepoints could be turned on but are not needed
         and since they may impact performance they are turned off here 
     """
@@ -182,10 +181,14 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         """
         super(DatabaseWrapper, self).__init__(*args, **kwargs)
         if DATABASE_EXTRAS.get('like', 'LIKEC') != 'LIKEC':
-            for key in ['contains','icontains',
-                         'startswith','istartswith',
-                         'endswith','iendswith']:
-                self.operators[key] = self.operators[key].replace('LIKEC',DATABASE_EXTRAS['like'])
+            for key in ['contains',
+                        'icontains',
+                        'startswith',
+                        'istartswith',
+                         'endswith',
+                        'iendswith']:
+                self.operators[key] = self.operators[key].replace('LIKEC', 
+                                                     DATABASE_EXTRAS['like'])
         try:        
             self.features = DatabaseFeatures(self)
         except:
@@ -251,31 +254,32 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     dsn = settings_dict.get('NAME','')
 
                 try:
-                    p = Database.SessionPool(settings_dict.get('USER',''), 
-                                             settings_dict.get('PASSWORD',''), 
-                                             dsn, 
-                                             DATABASE_EXTRAS.get('min',4), 
-                                             DATABASE_EXTRAS.get('max',8), 
-                                             DATABASE_EXTRAS.get('increment',1),
-                                             threaded = DATABASE_EXTRAS.get('threaded',True))
+                    pool = Database.SessionPool(settings_dict.get('USER',''), 
+                                                settings_dict.get('PASSWORD',''), 
+                                                dsn, 
+                                                DATABASE_EXTRAS.get('min',4), 
+                                                DATABASE_EXTRAS.get('max',8), 
+                                                DATABASE_EXTRAS.get('increment',1),
+                                                threaded = DATABASE_EXTRAS.get('threaded',
+                                                                               True))
                 except Exception, err:
-                    p = None
-                if p:
-                    if DATABASE_EXTRAS.get('timeout',0):
-                        p.timeout = DATABASE_EXTRAS['timeout']
-                    setattr(self.__class__, '_pool', p)
+                    pool = None
+                if pool:
+                    if DATABASE_EXTRAS.get('timeout', 0):
+                        pool.timeout = DATABASE_EXTRAS['timeout']
+                    setattr(self.__class__, '_pool', pool)
                 else:
                     msg = """##### Database '%s' login failed or database not found ##### 
                              Using settings: %s 
                              Django start up cancelled
-                          """ % (settings_dict.get('NAME','None'), settings_dict)
+                          """ % (settings_dict.get('NAME', 'None'), settings_dict)
                     print msg
                     print '\n##### DUE TO ERROR: %s\n' % err
                     return None
                 lock.release()
         return getattr(self.__class__, '_pool')
         
-    pool = property (_get_pool)
+    pool = property(_get_pool)
 
     def _cursor(self, settings=None):
         """ Get a cursor from the connection pool """
@@ -294,7 +298,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 cursor = FormatStylePlaceholderCursor(self.connection)
                 cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
                                "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
-                if DATABASE_EXTRAS.get('session',[]):
+                if DATABASE_EXTRAS.get('session', []):
                     for sql in DATABASE_EXTRAS['session']:
                         cursor.execute(sql)
                 try:
@@ -365,8 +369,9 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
         else:
             try:
                 return convert_unicode(query % tuple(args), self.charset)
-            except TypeError, e:
-                err = 'Parameter parsing failed due to error ' + str(e) + ' for query:' + query
+            except TypeError, error:
+                err = 'Parameter parsing failed due to error %s for query: %s' % (error,
+                                                                                  query)
                 if logger:
                     logger.critical(err)
                 else:
@@ -382,11 +387,12 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
         self._guess_input_sizes([params])
         try:
             return self.cursor.execute(query, self._param_generator(params))
-        except DatabaseError, e:
-            # cx_Oracle <= 4.4.0 wrongly raises a DatabaseError for ORA-01400.
-            if e.args[0].code == 1400 and not isinstance(e, IntegrityError):
-                e = IntegrityError(e.args[0])
-            err = '%s due to query:%s' % (e, query)
+        except Database.Error, error:
+            # cx_Oracle <= 4.4.0 wrongly raises a Database.Error for ORA-01400.
+            if error.args[0].code == 1400 and not isinstance(error, 
+                                                             Database.IntegrityError):
+                error = Database.IntegrityError(error.args[0])
+            err = '%s due to query:%s' % (error, query)
             if logger:
                 logger.critical(err)
             else:
@@ -404,11 +410,12 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
         try:
             return self.cursor.executemany(query,
                                 [self._param_generator(p) for p in formatted])
-        except DatabaseError, e:
-            # cx_Oracle <= 4.4.0 wrongly raises a DatabaseError for ORA-01400.
-            if e.args[0].code == 1400 and not isinstance(e, IntegrityError):
-                e = IntegrityError(e.args[0])
+        except Database.Error, error:
+            # cx_Oracle <= 4.4.0 wrongly raises a Database.Error for ORA-01400.
+            if error.args[0].code == 1400 and not isinstance(error, 
+                                                             Database.IntegrityError):
+                error = Database.IntegrityError(error.args[0])
             if logger:
-                logger.critical('%s due to query:%s' % (e, query))                
+                logger.critical('%s due to query: %s' % (error, query))                
             else:
                 raise 
