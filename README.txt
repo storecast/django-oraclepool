@@ -16,8 +16,7 @@ Pruned original ticket's base.py to just hold the pooling relevant code.
 Using the standard Oracle connection for the rest of the database classes, 
 ie. operations, client and introspection. 
 
-Tested with django 1.1.0 to 1.2.3 python 2.5 and 2.6 deals with the differences 
-to settings handling, etc. 
+Tested with django 1.1 to 1.4
 
 Extra features
 --------------

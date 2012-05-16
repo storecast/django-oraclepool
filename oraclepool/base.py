@@ -194,7 +194,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         except:
             # pre django 1.3
             self.features = DatabaseFeatures()
-        self.ops = OracleDatabaseOperations()
+        self.ops = OracleDatabaseOperations(self)
         self.client = OracleDatabaseClient(self)
         self.creation = DatabaseCreation(self)
         self.introspection = OracleDatabaseIntrospection(self)
