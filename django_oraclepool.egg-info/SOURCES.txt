@@ -19,6 +19,7 @@ oraclepool/creation.py
 oraclepool/log_sql.py
 oraclepool/tests.py
 tests/__init__.py
+tests/cred.py
 tests/make_data.py
 tests/manage.py
 tests/monkeypatches.py
