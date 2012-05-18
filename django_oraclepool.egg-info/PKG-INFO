@@ -9,8 +9,8 @@ License: Apache
 Description: ILRT Django Oracle pool
         =======================
         
-        Ed Crewe, `ILRT
-        <http://www.ilrt.bris.ac.uk/>`_ at University of Bristol, April 2011
+        Ed Crewe, `IT Services R&D
+        <http://www.bris.ac.uk/ilrt>`_ at University of Bristol, May 2012
         
         Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
         django database backend that uses cx_Oracle session pooling for connections

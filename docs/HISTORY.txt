@@ -5,6 +5,7 @@ Changelog
 -----------------------------------------------
 
 - Fix database connection usage for django 1.4 compatibility 
+  [Ed Crewe]
 - Fix tests/monkeypatch for performance and regression tests to work OK
   [Ed Crewe]
 - Add alias to pool to ensure each connection has its own pool
