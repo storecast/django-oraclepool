@@ -223,10 +223,11 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         """ Get the connection pool or create it if it doesnt exist
             Add thread lock to prevent server initial heavy load creating multiple pools
         """
-        if not hasattr (self.__class__, '_pool'):
+        pool_name = '_pool_%s' % getattr(self, 'alias', 'common')
+        if not hasattr (self.__class__, pool_name):
             lock = thread.allocate_lock()
             lock.acquire()
-            if not hasattr (self.__class__, '_pool'):            
+            if not hasattr (self.__class__, pool_name):            
                 if DATABASE_EXTRAS['threaded']:
                     Database.OPT_Threading = 1
                 else:
@@ -267,7 +268,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 if pool:
                     if DATABASE_EXTRAS.get('timeout', 0):
                         pool.timeout = DATABASE_EXTRAS['timeout']
-                    setattr(self.__class__, '_pool', pool)
+                    setattr(self.__class__, pool_name, pool)
                 else:
                     msg = """##### Database '%s' login failed or database not found ##### 
                              Using settings: %s 
@@ -277,7 +278,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     print '\n##### DUE TO ERROR: %s\n' % err
                     return None
                 lock.release()
-        return getattr(self.__class__, '_pool')
+        return getattr(self.__class__, pool_name)
         
     pool = property(_get_pool)
 
