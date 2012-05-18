@@ -32,6 +32,7 @@ class DatabaseCreation(OracleDatabaseCreation):
         older or existing Oracle database data. 
     """
     data_types = data_types 
+    start = datetime.now()
 
     def _create_test_db(self, verbosity=1, autoclobber=False):
         """ If existing is set then this uses the settings database

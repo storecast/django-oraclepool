@@ -32,7 +32,7 @@ EXTRAS = {'min':4,         # start number of connections
 DATABASES= { 'oraclepool':{'ENGINE' : 'oraclepool',
                            'EXTRAS' : EXTRAS
                           },
-             'oracle':{'ENGINE' : 'oracle',
+             'oracle':{'ENGINE' : 'django.db.backends.oracle',
                        'EXTRAS' : {'existing':'Unicode'}
                        }
              }
@@ -103,7 +103,7 @@ MEDIA_URL = ''
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
+STATIC_URL = '/media/'
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '%(u8uds4xsy0+95cj3o&k49*u@&--yp0t&e&0$!@s2fvea#u4j'

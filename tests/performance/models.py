@@ -149,7 +149,7 @@ class PerformanceTestCase(TestCase):
             globals()['connection'].close()
             globals()['connection'] = None
             DATABASES['default'] = DATABASES[engine]
-            backend = load_backend(engine)
+            backend = load_backend(DATABASES[engine]['ENGINE'])
             process = randint(0,self.conncount - 1)
             if not self.conns[engine][process]:
                 self.conns[engine][process] = backend.DatabaseWrapper(get_settings_dict(engine)) 
