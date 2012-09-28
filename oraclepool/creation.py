@@ -11,7 +11,7 @@ def existing(database='default'):
         Eg: if existing = 'Unicode' then its just used for the latter.
     """
     if hasattr(settings, 'DATABASES'):
-        db = settings.DATABASES.get('default',{})
+        db = settings.DATABASES.get(database,{})
         if db.has_key('EXTRAS'):
             if db['EXTRAS'].has_key('existing'):
                 return db['EXTRAS']['existing']
