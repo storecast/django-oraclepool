@@ -1,5 +1,6 @@
 import settings
 from django.db.backends.oracle.creation import DatabaseCreation
+from django.test.simple import DjangoTestSuiteRunner
 from datetime import datetime
 
 # Monkeypatch standard oracle driver for tests 
@@ -38,10 +39,10 @@ if settings.DATABASES['oracle']['EXTRAS'].get('existing',''):
         pool._drop_test_tables()
         pool._delete_test_users()
 
+    def null_method(self, **kwargs):
+        pass
+
     DatabaseCreation.start_time = start_time
     DatabaseCreation._create_test_db = _create_test_db
     DatabaseCreation._destroy_test_db = _destroy_test_db
-
-    
-
-
+    DjangoTestSuiteRunner.setup_databases = null_method
