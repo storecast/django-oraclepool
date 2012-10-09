@@ -1,6 +1,8 @@
 #!/usr/bin/env python
-import sys, os
-# import django and oracle pool based on the location of this tests folder ...
+import os
+import sys
+
+# import django and oracle pool based on the location of this tests folder ..
 here_path = os.path.abspath(os.path.dirname("."))
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
@@ -8,19 +10,21 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 # and not found above the location of this egg
 # sys.path.append('your path to django')
 try:
-    from django.core.management import execute_manager
+    from django.core.management import execute_from_command_line
 except:
-    egg_path = os.path.join('django-oraclepool','tests')
-    djangopath = here_path.replace(egg_path, '')
-    parts = os.path.split(djangopath)
-    while parts[0]:
-        djangopath = os.path.join(parts[0],'django')
-        if os.path.exists(djangopath):
-            sys.path.append(djangopath)
-            break
-        djangopath = parts[0]
-        parts = os.path.split(djangopath)
-    from django.core.management import execute_manager
+    print '''Please run this command via the python in which 
+             django is installed, eg. virtualenv/bin/python'''
+    exit
+    #egg_path = os.path.join('django-oraclepool','tests')
+    #djangopath = here_path.replace(egg_path, '')
+    #parts = os.path.split(djangopath)
+    #while parts[0]:
+    #    djangopath = os.path.join(parts[0],'django')
+    #    if os.path.exists(djangopath):
+    #        sys.path.append(djangopath)
+    #        break
+    #    djangopath = parts[0]
+    #    parts = os.path.split(djangopath)
     
 # Add oracle pool path
 oraclepool_path = here_path.replace('tests', '')
@@ -33,4 +37,10 @@ except ImportError:
     sys.exit(1)
 
 if __name__ == "__main__":
-    execute_manager(settings)
+    try:
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+        execute_from_command_line(sys.argv)
+    except:
+        # try it old style if the above fails ...
+        from django.core.management import execute_manager
+        execute_manager(settings)
