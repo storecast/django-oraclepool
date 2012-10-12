@@ -31,18 +31,41 @@ if settings.DATABASES['oracle']['EXTRAS'].get('existing',''):
         """ if existing is set then this must clean up all the test
             schema and data - not just drop the database
         """
-        print "#### Built tables and tested in %s ####" % str(datetime.now() - self.start_time())
+        if hasattr(self, 'start_time'):
+            print "#### Built tables and tested in %s ####" % str(datetime.now() - self.start_time())
         from django.db import connection
-        print 'Cleaning up test data and schema from %s' %  settings.TEST_DATABASE_NAME
+        print 'Cleaning up test data and schema from %s' %  test_database_name
         from oraclepool.creation import DatabaseCreation as DCPool
         pool = DCPool(connection)
         pool._drop_test_tables()
         pool._delete_test_users()
 
-    def null_method(self, **kwargs):
+    def setup_databases(self, **kwargs):
+        """ Dont create it, but do still run syncdb to populate test fixtures """
+        from django.db import connections, DEFAULT_DB_ALIAS
+        from django.core.management import call_command
+        connection = connections[DEFAULT_DB_ALIAS]
+        try:
+            call_command('syncdb',
+                verbosity=1,
+                interactive=False,
+                database=connection.alias,
+                load_initial_data=False)
+        except:
+            # In case test suite cancelled before clean up in previous run
+            _destroy_test_db(self, DEFAULT_DB_ALIAS)
+            call_command('syncdb',
+                verbosity=1,
+                interactive=False,
+                database=connection.alias,
+                load_initial_data=False)
+        return
+
+    def dummy_teardown_databases(self, old_config, **kwargs):
         pass
 
     DatabaseCreation.start_time = start_time
     DatabaseCreation._create_test_db = _create_test_db
     DatabaseCreation._destroy_test_db = _destroy_test_db
-    DjangoTestSuiteRunner.setup_databases = null_method
+    DjangoTestSuiteRunner.setup_databases = setup_databases
+    DjangoTestSuiteRunner.teardown_databases = dummy_teardown_databases
