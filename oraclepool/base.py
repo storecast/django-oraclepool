@@ -345,8 +345,13 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         if self.connection is not None:
             if self.logger:
                 self.logger.debug("Release pooled connection\n%s\n" % self.connection.dsn)
-            self.pool.release(self.connection)
-            self.connection = None
+            try:
+                self.pool.release(self.connection)
+            except Database.OperationalError as error:
+                if self.logger:
+                    self.logger.debug("Release pooled connection failed due to: %s" % str(error))
+            finally:
+                self.connection = None
 
     def _savepoint_commit(self, sid):
         """ Oracle doesn't support savepoint commits.  Ignore them. """
