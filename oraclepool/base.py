@@ -302,8 +302,24 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     self.logger.info("Acquire pooled connection \n%s\n" % self.connection.dsn)
 
                 cursor = FormatStylePlaceholderCursor(self.connection)
-                cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
-                               "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
+                
+                # In case one connection in the pool dies we need to retry others in the pool
+                retry = 0
+                max_retry = self.extras.get('min',4)
+                while (retry < max_retry):
+                    try:
+                        cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
+                                       "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
+                        retry = max_retry
+                    except Database.Error as error:
+                        self.logger.warn("Failed to set session date due to error: %s" % error)
+                        # If we have exhausted all of our connections in our pool raise the error
+                        if retry == max_retry - 1:
+                            self.logger.critical("Exhausted %d connections in the connection pool")
+                            raise
+                    
+                    retry += 1
+                
                 if self.extras.get('session', []):
                     for sql in self.extras['session']:
                         cursor.execute(sql)
