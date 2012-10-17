@@ -37,7 +37,7 @@ else:
 # Oracle takes client-side character set encoding from the environment.
 os.environ['NLS_LANG'] = '.UTF8'
 
-def get_extras(database='default'):
+def get_extras(user_defined_extras):
     """ Oracle already has OPTIONS specific to cx_Oracle.connection() use
         This adds extra pool and sql logging attributes to the settings 
 
@@ -59,11 +59,10 @@ def get_extras(database='default'):
                                        #   ['alter session set cursor_sharing = similar',
                                        #    'alter session set session_cached_cursors = 20']
                       }
-    if hasattr(settings, 'DATABASES'):
-        db_settings = settings.DATABASES.get(database, {})
-        if db_settings.has_key('EXTRAS'):
-            return db_settings['EXTRAS']
-    if hasattr(settings, 'DATABASE_EXTRAS'):
+    
+    if user_defined_extras != None or len(user_defined_extras) != 0:
+        return user_defined_extras
+    elif hasattr(settings, 'DATABASE_EXTRAS'):
         return settings.DATABASE_EXTRAS
     else:
         return default_extras
@@ -121,10 +120,7 @@ def get_logger(extras):
         middleware_classes = list(settings.MIDDLEWARE_CLASSES) 
         middleware_classes.append('oraclepool.log_sql.SQLLogMiddleware')
         settings.MIDDLEWARE_CLASSES = tuple(middleware_classes)
-
-DATABASE_EXTRAS = get_extras()
-logger = get_logger(DATABASE_EXTRAS)
-    
+   
 class DatabaseFeatures(OracleDatabaseFeatures):
     """ Add extra options from default Oracle ones
         Plus switch off save points and id return
@@ -180,7 +176,12 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             version - tested with both 1.0 and 1.2
         """
         super(DatabaseWrapper, self).__init__(*args, **kwargs)
-        if DATABASE_EXTRAS.get('like', 'LIKEC') != 'LIKEC':
+        
+        user_defined_extras = self.settings_dict['EXTRAS'] if 'EXTRAS' in self.settings_dict else {}
+        self.extras = get_extras(user_defined_extras)
+        self.logger = get_logger(self.extras)
+        
+        if self.extras.get('like', 'LIKEC') != 'LIKEC':
             for key in ['contains',
                         'icontains',
                         'startswith',
@@ -188,7 +189,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                          'endswith',
                         'iendswith']:
                 self.operators[key] = self.operators[key].replace('LIKEC', 
-                                                     DATABASE_EXTRAS['like'])
+                                                     self.extras['like'])
         try:        
             self.features = DatabaseFeatures(self)
         except:
@@ -232,7 +233,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             lock = thread.allocate_lock()
             lock.acquire()
             if not hasattr (self.__class__, pool_name):            
-                if DATABASE_EXTRAS['threaded']:
+                if self.extras['threaded']:
                     Database.OPT_Threading = 1
                 else:
                     Database.OPT_Threading = 0
@@ -262,16 +263,16 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     pool = Database.SessionPool(settings_dict.get('USER',''), 
                                                 settings_dict.get('PASSWORD',''), 
                                                 dsn, 
-                                                DATABASE_EXTRAS.get('min',4), 
-                                                DATABASE_EXTRAS.get('max',8), 
-                                                DATABASE_EXTRAS.get('increment',1),
-                                                threaded = DATABASE_EXTRAS.get('threaded',
+                                                self.extras.get('min',4), 
+                                                self.extras.get('max',8), 
+                                                self.extras.get('increment',1),
+                                                threaded = self.extras.get('threaded',
                                                                                True))
                 except Exception, err:
                     pool = None
                 if pool:
-                    if DATABASE_EXTRAS.get('timeout', 0):
-                        pool.timeout = DATABASE_EXTRAS['timeout']
+                    if self.extras.get('timeout', 0):
+                        pool.timeout = self.extras['timeout']
                     setattr(self.__class__, pool_name, pool)
                 else:
                     msg = """##### Database '%s' login failed or database not found ##### 
@@ -297,14 +298,15 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 if connection_created:
                     # Assume acquisition of existing connection = create for django signal
                     connection_created.send(sender=self.__class__)
-                if logger:
-                    logger.info("Acquire pooled connection \n%s\n" % self.connection.dsn)
+                if self.logger:
+                    self.logger.info("Acquire pooled connection \n%s\n" % self.connection.dsn)
 
                 cursor = FormatStylePlaceholderCursor(self.connection)
+                cursor.set_logger(self.logger)
                 cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
                                "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
-                if DATABASE_EXTRAS.get('session', []):
-                    for sql in DATABASE_EXTRAS['session']:
+                if self.extras.get('session', []):
+                    for sql in self.extras['session']:
                         cursor.execute(sql)
                 try:
                     self.oracle_version = int(self.connection.version.split('.')[0])
@@ -317,8 +319,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     else:
                         self.ops.regex_lookup = self.ops.regex_lookup_10
                 except ValueError, err:
-                    if logger:
-                        logger.warn(str(err))
+                    if self.logger:
+                        self.logger.warn(str(err))
                 try:
                     self.connection.stmtcachesize = 20
                 except:
@@ -327,14 +329,16 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     pass
             else:
                 cursor = FormatStylePlaceholderCursor(self.connection)                
+                cursor.set_logger(self.logger)
         else:
-            if logger:
-                logger.critical('Pool couldnt be created - please check your Oracle connection or credentials')
+            if self.logger:
+                self.logger.critical('Pool couldnt be created - please check your Oracle connection or credentials')
             else:
                 raise Exception('Pool couldnt be created - please check your Oracle connection or credentials')
             
         if not cursor:
             cursor = FormatStylePlaceholderCursor(self.connection)
+            cursor.set_logger(self.logger)
         # Default arraysize of 1 is highly sub-optimal.
         cursor.arraysize = 100
         return cursor
@@ -342,10 +346,15 @@ class DatabaseWrapper(BaseDatabaseWrapper):
     def close(self):
         """ Releases connection back to pool """
         if self.connection is not None:
-            if logger:
-                logger.debug("Release pooled connection\n%s\n" % self.connection.dsn)
-            self.pool.release(self.connection)
-            self.connection = None
+            if self.logger:
+                self.logger.debug("Release pooled connection\n%s\n" % self.connection.dsn)
+            try:
+                self.pool.release(self.connection)
+            except Database.OperationalError as error:
+                if self.logger:
+                    self.logger.debug("Release pooled connection failed due to: %s" % str(error))
+            finally:
+                self.connection = None
 
     def _savepoint_commit(self, sid):
         """ Oracle doesn't support savepoint commits.  Ignore them. """
@@ -355,6 +364,14 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
     """ Added just to allow use of % for like queries without params
         and use of logger if present.
     """
+
+    logger = None
+
+    def set_logger(self, logger):
+        """ Added to assign logger as cursor property - to make its move from 
+            the global namespace in B.Watson's code work OK
+        """
+        self.logger = logger
 
     def cleanquery(self, query, args=None):
         """ cx_Oracle wants no trailing ';' for SQL statements.  For PL/SQL, it
@@ -377,8 +394,8 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             except TypeError, error:
                 err = 'Parameter parsing failed due to error %s for query: %s' % (error,
                                                                                   query)
-                if logger:
-                    logger.critical(err)
+                if self.logger:
+                    self.logger.critical(err)
                 else:
                     raise Exception(err)
                 
@@ -398,8 +415,8 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
                                                              Database.IntegrityError):
                 error = Database.IntegrityError(error.args[0])
             err = '%s due to query:%s' % (error, query)
-            if logger:
-                logger.critical(err)
+            if self.logger:
+                self.logger.critical(err)
             else:
                 raise Exception(err) 
 
@@ -420,7 +437,7 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
             if error.args[0].code == 1400 and not isinstance(error, 
                                                              Database.IntegrityError):
                 error = Database.IntegrityError(error.args[0])
-            if logger:
-                logger.critical('%s due to query: %s' % (error, query))                
+            if self.logger:
+                self.logger.critical('%s due to query: %s' % (error, query))                
             else:
                 raise 
