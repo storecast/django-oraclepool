@@ -4,42 +4,52 @@ data_types = OracleDatabaseCreation.data_types
 import sys
 from datetime import datetime
 
-def existing(database='default'):
+def existing(settings_dict):
     """ Use existing database for tests? 
         Cater for using existing Oracle databases both for format issues and
         for database tests where you dont have oracle dba drop database permissions
         Eg: if existing = 'Unicode' then its just used for the latter.
     """
-    if hasattr(settings, 'DATABASES'):
-        db = settings.DATABASES.get('default',{})
-        if db.has_key('EXTRAS'):
-            if db['EXTRAS'].has_key('existing'):
-                return db['EXTRAS']['existing']
+    extras_setting = settings_dict['EXTRAS'] if 'EXTRAS' in settings_dict else None
+    
+    if extras_setting.has_key('existing'):
+        return extras_setting['existing']
     elif hasattr(settings, 'DATABASE_EXTRAS'):
         return settings.DATABASE_EXTRAS.get('existing','')
     else:
         return ''
 
-# Uses the specified encoding 
-if existing() == 'ASCII':
-    # Default CharFields are not Unicode
-    data_types['CharField'] = 'VARCHAR2(%(max_length)s)'
-    data_types['FileField'] = 'VARCHAR2(%(max_length)s)'
-    data_types['FilePathField'] = 'VARCHAR2(%(max_length)s)'
+# Uses the specified encoding
+def get_ascii_data_types(settings_dict): 
+    if existing(settings_dict) == 'ASCII':
+        # Default CharFields are not Unicode
+        data_types['CharField'] = 'VARCHAR2(%(max_length)s)'
+        data_types['FileField'] = 'VARCHAR2(%(max_length)s)'
+        data_types['FilePathField'] = 'VARCHAR2(%(max_length)s)'
+        return data_types
+    else:
+        return None
 
 class DatabaseCreation(OracleDatabaseCreation):
     """ Allow for modification of the data types to cater for using
         older or existing Oracle database data. 
     """
-    data_types = data_types 
     start = datetime.now()
 
+    def __init__(self, connection):
+        OracleDatabaseCreation.__init__(self, connection)
+        
+        ascii_data_types = get_ascii_data_types(self.connection.settings_dict)
+        if ascii_data_types != None:
+            data_types = ascii_data_types
+    
     def _create_test_db(self, verbosity=1, autoclobber=False):
         """ If existing is set then this uses the settings database
             for testing rather than creating a new one
         """
         self.start = datetime.now()
-        if existing():
+        
+        if existing(self.connection.settings_dict):
             if not getattr(settings, 'TEST_DATABASE_NAME', ''):
                 settings.TEST_DATABASE_NAME = settings.DATABASE_NAME
                 settings.TEST_DATABASE_USER = settings.DATABASE_USER
@@ -56,7 +66,7 @@ class DatabaseCreation(OracleDatabaseCreation):
             schema and data - not just drop the database
         """
         print "#### Built tables and tested in %s ####" % str(datetime.now() - self.start)
-        if existing():
+        if existing(self.connection.settings_dict):
             print 'Cleaning up test data and schema from %s' % settings.TEST_DATABASE_NAME
             self._drop_test_tables()
             self._delete_test_users()
@@ -87,7 +97,7 @@ class DatabaseCreation(OracleDatabaseCreation):
         return test_tables
 
     def _drop_test_tables(self):
-        """ Individually delete the test tables """
+        """ Individually drop the test tables """
         from django.db import connection, transaction
         cursor = connection.cursor()
         try:
@@ -108,6 +118,27 @@ class DatabaseCreation(OracleDatabaseCreation):
             print 'Couldnt acquire transaction to delete test tables due to error: %s' % err
         return
 
+    def _delete_test_data(self):
+        """ Individually delete the test tables """
+        from django.db import connection, transaction
+        cursor = connection.cursor()
+        try:
+            for table in self.list_test_tables():
+                statement = "delete from " + table 
+                try:
+                    cursor.execute(statement)
+                except:
+                    pass
+                try:
+                    cursor.execute(statement)            
+                except:
+                    pass
+            print 'Deleted test data'
+            transaction.commit_unless_managed()            
+        except Exception, err:
+            print 'Couldnt acquire transaction to delete test data due to error: %s' % err
+        return
+
     def _delete_test_users(self):
         """ individually delete the test users """
         user_clause =  " from auth_user where email like '%@example.com' or email is null"
@@ -118,6 +149,6 @@ class DatabaseCreation(OracleDatabaseCreation):
             cursor.execute("delete " + user_clause)
             transaction.commit_unless_managed()
             print 'Deleted test users'
-        except:
-            print 'Couldnt acquire connection to delete test users'
+        except Exception, err:
+            print 'Couldnt acquire connection to delete test users due to %s' % err
         return
