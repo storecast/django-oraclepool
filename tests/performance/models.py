@@ -169,5 +169,7 @@ class PerformanceTestCase(TestCase):
         signals.request_finished.disconnect(close_connection)
         signals.request_finished.send(sender=self.__class__)
         signals.request_finished.connect(close_connection)
+        #if engine == 'oracle':
+        #    globals()['connection'].close()
         delta = datetime.now() - self.start
         self.time[engine] += delta.microseconds
