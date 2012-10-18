@@ -4,6 +4,8 @@ Changelog
 1.0 Add multiple connection extras configuration and RAC fix
 ------------------------------------------------------------
 
+- Fix handling of RAC connection swapping - TODO
+  [Josh Smeaton]
 - Fix tests for running against an existing database 
 - Fix logger usage so its OK when logging cursor errors
   [Ed Crewe]
