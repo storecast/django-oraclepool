@@ -280,7 +280,10 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                              Django start up cancelled
                           """ % settings_dict
                     msg += '\n##### DUE TO ERROR: %s\n' % err
-                    self.logger.critical(msg)
+                    if self.logger:
+                        self.logger.critical(msg)
+                    else:
+                        print msg
                     return None
                 lock.release()
         return getattr(self.__class__, pool_name)
@@ -334,7 +337,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
             if self.logger:
                 self.logger.critical('Pool couldnt be created - please check your Oracle connection or credentials')
             else:
-                raise Exception('Pool couldnt be created - please check your Oracle connection or credentials')
+                raise Exception('\n\n##### Pool couldnt be created - please check your Oracle connection or credentials')
             
         if not cursor:
             cursor = FormatStylePlaceholderCursor(self.connection)
