@@ -2,7 +2,7 @@ ILRT Django Oracle pool
 =======================
 
 Ed Crewe, `IT Services R&D
-<http://www.bris.ac.uk/ilrt>`_ at University of Bristol, May 2012
+<http://www.bris.ac.uk/ilrt>`_ at University of Bristol, November 2012
 
 Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
 django database backend that uses cx_Oracle session pooling for connections

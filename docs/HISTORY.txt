@@ -4,7 +4,7 @@ Changelog
 1.0 Add multiple connection extras configuration (2012-11-17)
 -------------------------------------------------------------
 
-- Fix credentials display to console
+- Use logger for wrong credentials error, if available, and hide pw
 - Fix tests for running against an existing database 
 - Fix logger usage so its OK when logging cursor errors
   [Ed Crewe]
