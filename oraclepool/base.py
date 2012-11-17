@@ -275,12 +275,12 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                         pool.timeout = self.extras['timeout']
                     setattr(self.__class__, pool_name, pool)
                 else:
-                    msg = """##### Database '%s' login failed or database not found ##### 
-                             Using settings: %s 
+                    msg = """##### Database '%(NAME)s' login failed or database not found ##### 
+                             Using settings: %(USER)s @ %(HOST)s:%(PORT)s / %(NAME)s  
                              Django start up cancelled
-                          """ % (settings_dict.get('NAME', 'None'), settings_dict)
-                    print msg
-                    print '\n##### DUE TO ERROR: %s\n' % err
+                          """ % settings_dict
+                    msg += '\n##### DUE TO ERROR: %s\n' % err
+                    self.logger.critical(msg)
                     return None
                 lock.release()
         return getattr(self.__class__, pool_name)
