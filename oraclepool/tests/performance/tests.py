@@ -6,7 +6,6 @@ from django.core.handlers.base import BaseHandler
 
 from django.db.backends.oracle.base import DatabaseWrapper as OracleDatabaseWrapper
 from oraclepool.base import DatabaseWrapper as PoolDatabaseWrapper
-from django.core.paginator import Paginator
 from django.test import TestCase
 from datetime import datetime
 from django.conf import settings 
@@ -128,6 +127,21 @@ class PerformanceTestCase(TestCase):
             for i in range(0, self.conncount):
                 self.conns[engine].append(None)
 
+    def get_backend(self, engine):
+        """ Load DATABASES[engine]['ENGINE'] directly because
+            oracle can end up with oraclepool as the engine
+            and your testing oraclepool speed against itself!
+        """
+        if engine == 'oracle':
+            try:
+                return load_backend('django.db.backends.oracle') 
+            except: 
+                # django 1.2
+                return load_backend('oracle') 
+        else:
+            return load_backend('oraclepool')
+
+
     def get_connection(self, engine):
         """ The global connection object is switched whenever 
             a different process or threads serves the request
@@ -135,16 +149,20 @@ class PerformanceTestCase(TestCase):
             and hence demonstrate the real world pooled connection effect
         """
         DATABASES = settings.DATABASES
+        DATABASES['default'] = DATABASES[engine]
         if self.newconns:
             globals()['connection'].close()
-            globals()['connection'] = None
-            DATABASES['default'] = DATABASES[engine]
-            backend = load_backend(DATABASES[engine]['ENGINE'])
-            process = randint(0,self.conncount - 1)
+            backend = self.get_backend(engine)
+            process = randint(0, self.conncount - 1)
             if not self.conns[engine][process]:
-                self.conns[engine][process] = backend.DatabaseWrapper(get_settings_dict(engine)) 
-                cursor = self.conns[engine][process].cursor()
+                conn = backend.DatabaseWrapper(get_settings_dict(engine)) 
+                self.conns[engine][process] = conn
             globals()['connection'] = self.conns[engine][process]
+        elif not globals()['connection']:
+            backend = self.get_backend(engine)
+            globals()['connection'] = backend.DatabaseWrapper(
+                                          get_settings_dict(engine)) 
+        cursor = globals()['connection'].cursor()
         return
 
     def dummy_request_start(self, engine):
@@ -159,7 +177,6 @@ class PerformanceTestCase(TestCase):
         signals.request_finished.disconnect(close_connection)
         signals.request_finished.send(sender=self.__class__)
         signals.request_finished.connect(close_connection)
-        #if engine == 'oracle':
-        #    globals()['connection'].close()
+        globals()['connection'].close()
         delta = datetime.now() - self.start
         self.time[engine] += delta.microseconds

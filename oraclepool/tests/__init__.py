@@ -1,3 +1,7 @@
+""" Importing tests here means they are found for running test oraclepool
+    Need to also add each as an app for it to have the test models needed
+    eg. oraclepool.tests.performance
+"""
 import monkeypatches
 from oraclepool.tests.aggregates import models
 from oraclepool.tests.apitest.tests import test_dbapi
