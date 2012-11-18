@@ -48,18 +48,24 @@ class DatabaseCreation(OracleDatabaseCreation):
             for testing rather than creating a new one
         """
         self.start = datetime.now()
-        
+
+        # 'Option for using existing (non-production) database for tests' 
         if existing(self.connection.settings_dict):
-            if not getattr(settings, 'TEST_DATABASE_NAME', ''):
+            conn_settings = self.connection.settings_dict
+            if conn_settings.has_key('TEST_NAME'):
+                if not conn_settings['TEST_NAME']:
+                    conn_settings['TEST_NAME'] = conn_settings['NAME']
+            # django pre 1.3 global settings
+            elif hasattr(settings, 'TEST_DATABASE_NAME') and not settings.TEST_DATABASE_NAME:
                 settings.TEST_DATABASE_NAME = settings.DATABASE_NAME
                 settings.TEST_DATABASE_USER = settings.DATABASE_USER
                 settings.TEST_DATABASE_PASSWD = settings.DATABASE_PASSWORD
-            # 'Using existing database for tests' 
         else:
             super(OracleDatabaseCreation, self)._create_test_db(verbosity=verbosity,
                                                                 autoclobber=autoclobber)
-        print 'Using Test Database %s' % settings.TEST_DATABASE_NAME
-        return settings.TEST_DATABASE_NAME
+        test_db = conn_settings.get('TEST_NAME', getattr(settings, 'TEST_DATABASE_NAME', 'None'))
+        print 'Using Test Database %s' % test_db
+
 
     def _destroy_test_db(self, test_database_name, verbosity=1):
         """ If existing is set then this must clean up all the test

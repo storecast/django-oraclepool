@@ -1,4 +1,4 @@
-from django.db import models, connection, backend, load_backend
+from django.db import connection, backend, load_backend
 
 from django.core import signals
 from django.db import close_connection
@@ -9,23 +9,11 @@ from oraclepool.base import DatabaseWrapper as PoolDatabaseWrapper
 from django.core.paginator import Paginator
 from django.test import TestCase
 from datetime import datetime
-from django.conf.settings import DATABASES, get_settings_dict
+from django.conf import settings 
+from oraclepool.tests.settings import get_settings_dict
 from random import randint
 
-class OneTable(models.Model):
-    b = models.CharField(max_length=100)
-    c = models.CharField(default=u'test', max_length=10)
-    
-    def __repr__(self):
-        return '<OneTable %s: %s, %s>' % (self.pk, self.b, self.c)
-
-
-class TwoTable(models.Model):
-    a = models.ForeignKey(OneTable)
-    b = models.CharField(max_length=100)
-    
-    def __repr__(self):
-        return '<TwoTable %s: %s>' % (self.pk, self.b)
+from oraclepool.tests.performance.models import OneTable, TwoTable
 
 class PerformanceTestCase(TestCase):
     """ Runs a set of inserts and queries via each oracle
@@ -53,6 +41,7 @@ class PerformanceTestCase(TestCase):
         """ Main test sequence is run here other funcs are helpers
             for those timed tests
         """
+        DATABASES = settings.DATABASES
         fixtures = ['paging.json']
         self.setup_conns()
         conncount = {}
@@ -145,6 +134,7 @@ class PerformanceTestCase(TestCase):
             NB: Must call cursor for it to actually connect to oracle
             and hence demonstrate the real world pooled connection effect
         """
+        DATABASES = settings.DATABASES
         if self.newconns:
             globals()['connection'].close()
             globals()['connection'] = None
