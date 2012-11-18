@@ -7,6 +7,8 @@ Changelog
 - Make sure the use existing clause works OK for current database settings
 - Move tests into oraclepool tests
 - Split out the tests from the models files
+- Fix the performance test so that its against oracle 
+  (not oraclepool itself, since the install can override the oracle engine class)
 
 [Ed Crewe]
 
