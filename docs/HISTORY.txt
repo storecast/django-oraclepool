@@ -1,11 +1,20 @@
 Changelog
 =========
 
+1.1 Refactor the tests (2012-11-18)
+-----------------------------------
+
+- Make sure the use existing clause works OK for current database settings
+- Move tests into oraclepool tests
+- Split out the tests from the models files
+
+[Ed Crewe]
+
 1.0 Add multiple connection extras configuration (2012-11-17)
 -------------------------------------------------------------
 
-- Use logger for wrong credentials error, if available, and hide pw
-- Fix tests for running against an existing database 
+- Use logger for credentials error, if available, and hide pw [Ed Crewe]
+- Fix tests for running against an existing database [Ed Crewe]
 - Fix logger usage so its OK when logging cursor errors
   [Ed Crewe]
 - Add extras dictionary and logger to connections, rather than globally so each one
