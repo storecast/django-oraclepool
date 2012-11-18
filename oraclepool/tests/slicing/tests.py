@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator
 from django.test import TestCase
-from oraclepool.tests.slicing import *
+from oraclepool.tests.slicing.models import *
         
 class PagingTestCase(TestCase):
     """The Paginator uses slicing internally."""
