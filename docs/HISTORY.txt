@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.2 Make sure connections that have timed out are flushed
+---------------------------------------------------------
+
+- Add get_alive_connection wrapper to conn.ping() test connections before use [Brent Watson]
+- Try Oracle rollback if requested [Brent Watson]
+- Pass logger from connection to cursor [Brent Watson]
+- Add models.py so test suite runs [Ed Crewe]
+
 1.1 Refactor the tests (2012-11-18)
 -----------------------------------
 
@@ -17,11 +25,9 @@ Changelog
 
 - Use logger for credentials error, if available, and hide pw [Ed Crewe]
 - Fix tests for running against an existing database [Ed Crewe]
-- Fix logger usage so its OK when logging cursor errors
-  [Ed Crewe]
+- Fix logger usage so its OK when logging cursor errors [Ed Crewe]
 - Add extras dictionary and logger to connections, rather than globally so each one
-  can be configured and log separately
-  [Kent Watson]
+  can be configured and log separately [Brent Watson]
 
 0.9 Django 1.4 compatibility fixes (2012-05-18)
 -----------------------------------------------
