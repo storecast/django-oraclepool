@@ -1,6 +1,28 @@
 Changelog
 =========
 
+1.1 Refactor the tests (2012-11-18)
+-----------------------------------
+
+- Make sure the use existing clause works OK for current database settings
+- Move tests into oraclepool tests
+- Split out the tests from the models files
+- Fix the performance test so that its against oracle 
+  (not oraclepool itself, since the install can override the oracle engine class)
+
+[Ed Crewe]
+
+1.0 Add multiple connection extras configuration (2012-11-17)
+-------------------------------------------------------------
+
+- Use logger for credentials error, if available, and hide pw [Ed Crewe]
+- Fix tests for running against an existing database [Ed Crewe]
+- Fix logger usage so its OK when logging cursor errors
+  [Ed Crewe]
+- Add extras dictionary and logger to connections, rather than globally so each one
+  can be configured and log separately
+  [Kent Watson]
+
 0.9 Django 1.4 compatibility fixes (2012-05-18)
 -----------------------------------------------
 

@@ -1,4 +1,4 @@
-from django.db import models, connection, backend, load_backend
+from django.db import connection, backend, load_backend
 
 from django.core import signals
 from django.db import close_connection
@@ -6,26 +6,13 @@ from django.core.handlers.base import BaseHandler
 
 from django.db.backends.oracle.base import DatabaseWrapper as OracleDatabaseWrapper
 from oraclepool.base import DatabaseWrapper as PoolDatabaseWrapper
-from django.core.paginator import Paginator
 from django.test import TestCase
 from datetime import datetime
-from settings import DATABASES, get_settings_dict
+from django.conf import settings 
+from oraclepool.tests.settings import get_settings_dict
 from random import randint
 
-class OneTable(models.Model):
-    b = models.CharField(max_length=100)
-    c = models.CharField(default=u'test', max_length=10)
-    
-    def __repr__(self):
-        return '<OneTable %s: %s, %s>' % (self.pk, self.b, self.c)
-
-
-class TwoTable(models.Model):
-    a = models.ForeignKey(OneTable)
-    b = models.CharField(max_length=100)
-    
-    def __repr__(self):
-        return '<TwoTable %s: %s>' % (self.pk, self.b)
+from oraclepool.tests.performance.models import OneTable, TwoTable
 
 class PerformanceTestCase(TestCase):
     """ Runs a set of inserts and queries via each oracle
@@ -53,6 +40,7 @@ class PerformanceTestCase(TestCase):
         """ Main test sequence is run here other funcs are helpers
             for those timed tests
         """
+        DATABASES = settings.DATABASES
         fixtures = ['paging.json']
         self.setup_conns()
         conncount = {}
@@ -139,22 +127,42 @@ class PerformanceTestCase(TestCase):
             for i in range(0, self.conncount):
                 self.conns[engine].append(None)
 
+    def get_backend(self, engine):
+        """ Load DATABASES[engine]['ENGINE'] directly because
+            oracle can end up with oraclepool as the engine
+            and your testing oraclepool speed against itself!
+        """
+        if engine == 'oracle':
+            try:
+                return load_backend('django.db.backends.oracle') 
+            except: 
+                # django 1.2
+                return load_backend('oracle') 
+        else:
+            return load_backend('oraclepool')
+
+
     def get_connection(self, engine):
         """ The global connection object is switched whenever 
             a different process or threads serves the request
             NB: Must call cursor for it to actually connect to oracle
             and hence demonstrate the real world pooled connection effect
         """
+        DATABASES = settings.DATABASES
+        DATABASES['default'] = DATABASES[engine]
         if self.newconns:
             globals()['connection'].close()
-            globals()['connection'] = None
-            DATABASES['default'] = DATABASES[engine]
-            backend = load_backend(DATABASES[engine]['ENGINE'])
-            process = randint(0,self.conncount - 1)
+            backend = self.get_backend(engine)
+            process = randint(0, self.conncount - 1)
             if not self.conns[engine][process]:
-                self.conns[engine][process] = backend.DatabaseWrapper(get_settings_dict(engine)) 
-                cursor = self.conns[engine][process].cursor()
+                conn = backend.DatabaseWrapper(get_settings_dict(engine)) 
+                self.conns[engine][process] = conn
             globals()['connection'] = self.conns[engine][process]
+        elif not globals()['connection']:
+            backend = self.get_backend(engine)
+            globals()['connection'] = backend.DatabaseWrapper(
+                                          get_settings_dict(engine)) 
+        cursor = globals()['connection'].cursor()
         return
 
     def dummy_request_start(self, engine):
@@ -169,5 +177,6 @@ class PerformanceTestCase(TestCase):
         signals.request_finished.disconnect(close_connection)
         signals.request_finished.send(sender=self.__class__)
         signals.request_finished.connect(close_connection)
+        globals()['connection'].close()
         delta = datetime.now() - self.start
         self.time[engine] += delta.microseconds

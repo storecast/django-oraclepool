@@ -2,7 +2,7 @@ ILRT Django Oracle pool
 =======================
 
 Ed Crewe, `IT Services R&D
-<http://www.bris.ac.uk/ilrt>`_ at University of Bristol, May 2012
+<http://www.bris.ac.uk/ilrt>`_ at University of Bristol, November 2012
 
 Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
 django database backend that uses cx_Oracle session pooling for connections
@@ -119,8 +119,14 @@ database itself (see below).
 Tests
 -----
 
-The tests are run via separate test apps in the django-oraclepool folder.
-Some of these tests are derived from a set for http://code.google.com/p/django-mssql/
+The tests are run via the normal test command, however in order to test everything OK
+the settings file within oraclepool.tests.settings should be used eg.
+
+bin/django-admin.py test oraclepool settings=oraclepool.tests.settings
+
+or the applications adapted to add the oraclepool.tests sub-applications.
+
+NB: Some of these tests are derived from a set for http://code.google.com/p/django-mssql/
 
 They also include the option to run the test suite against an existing database for users who dont
 have full oracle dba rights on their test oracle servers. 
@@ -128,9 +134,6 @@ have full oracle dba rights on their test oracle servers.
 The key extra tests are performance timings for running the test suite via the pooled oracle
 connection vs the standard one. Hopefully these timings should indicate whether using oraclepool is
 of value when using django with your oracle server network. 
-
-Run the tests by running django-oraclepool/tests/manage.py test 
-Or run individual tests by supplying there name, eg. manage.py test performance
 
 The performance test simulates a real environment by running up a number of connections
 as would exist with a production web server (the Apache2 default is 2 processes * 64 threads)

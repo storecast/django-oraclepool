@@ -3,8 +3,7 @@ from decimal import Decimal
 import  cx_Oracle
 # Base unit test - Python database API 2.0 standard
 import dbapi20
-
-from settings import get_settings_dict
+from oraclepool.tests.settings import get_settings_dict
 settings_dict = get_settings_dict()
 
 if settings_dict['ENGINE'] == 'oraclepool':

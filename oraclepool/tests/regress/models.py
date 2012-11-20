@@ -1,7 +1,6 @@
 import datetime
 import decimal
 from django.db import models, IntegrityError
-from django.test import TestCase
 from django.core.paginator import Paginator
 
 class Bug19Table(models.Model):
@@ -102,19 +101,10 @@ class RelatedA(models.Model):
     a = models.CharField(max_length=50)
     b = models.ForeignKey(RelatedB)
 
-class Bug26TestCase(TestCase):
-    """Test that slicing queries w/ duplicate column names works."""
 
-    def testWithDuplicateColumnNames(self):
-        b = RelatedB(a='this is a value', b="valueb", c="valuec")
-        b.save()
-        
-        RelatedA(a="valuea", b=b).save()
-        RelatedA(a="valuea", b=b).save()
+class Bug38Table(models.Model):
+    d = models.DecimalField(max_digits=5, decimal_places=2)
 
-        items = RelatedA.objects.select_related()[1:2]
-        self.assertEqual(len(items), 1)
-        
 class Bug34DatetimeTable(models.Model):
     """Ensure that __year filters work with datetime fields.
     
@@ -195,27 +185,6 @@ class Bug37BTable(models.Model):
     d = models.CharField(max_length=50)
     a = models.ForeignKey(Bug37ATable)
 
-class Bug37TestCase(TestCase):
-    """Test that IntegrityErrors are raised when appropriate."""
-
-    def testDuplicateKeysFails(self):
-        Bug37ATable(pk=1, a='a', b='b', c='c').save(force_insert=True)
-        try:
-            Bug37ATable(pk=1, a='a', b='b', c='c').save(force_insert=True)
-        except Exception, e:
-            self.failUnless(isinstance(e, IntegrityError) or str(e).find('ORA-00001')>-1,
-                            'Expected IntegrityError but got: %s - %s' % (type(e),str(e)))
-            
-    def testDeleteRelatedRecordFails(self):
-        a2 = Bug37ATable(a='a', b='b', c='c')
-        a2.save()
-        
-        Bug37BTable(d='d', a=a2).save()
-        try:
-            a2.delete()
-        except Exception, e:
-            self.failUnless(isinstance(e, IntegrityError), 'Expected IntegrityError but got: %s' % type(e))
-
 class Bug38Table(models.Model):
     d = models.DecimalField(max_digits=5, decimal_places=2)
 
@@ -259,23 +228,6 @@ class Bug58TableItem(models.Model):
     recipe = models.ForeignKey(Bug58TableRecipe, related_name='item')
     ingredient = models.ForeignKey(Bug58TableIn, related_name='item')
     amount = models.CharField(max_length=30)
-
-class Bug58TestCase(TestCase):
-    def testDistinctRelated(self):
-        i1 = Bug58TableIn(name='bread')
-        i1.save()
-        i2 = Bug58TableIn(name='butter')
-        i2.save()
-        
-        r = Bug58TableRecipe(name='toast')
-        r.save()
-        
-        Bug58TableItem(recipe=r, ingredient=i1, amount='1 slice').save()
-        Bug58TableItem(recipe=r, ingredient=i2, amount='1 Tbsp').save()
-
-        q = list(Bug58TableRecipe.objects.filter(item__ingredient__name__in=['bread','butter']).distinct())
-        self.assertEqual(len(q), 1)
-
 
 class Bug66Table(models.Model):
     """

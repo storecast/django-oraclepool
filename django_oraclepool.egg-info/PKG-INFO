@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: django-oraclepool
-Version: 0.9
+Version: 1.0
 Summary: django database backend that uses cx_Oracle session pooling for connections
 Home-page: http://bitbucket.org/edcrewe/django-oraclepool
 Author: Ed Crewe, Taras Halturin
@@ -10,7 +10,7 @@ Description: ILRT Django Oracle pool
         =======================
         
         Ed Crewe, `IT Services R&D
-        <http://www.bris.ac.uk/ilrt>`_ at University of Bristol, May 2012
+        <http://www.bris.ac.uk/ilrt>`_ at University of Bristol, November 2012
         
         Packaged version of http://code.djangoproject.com/ticket/7732 by Taras Halturin
         django database backend that uses cx_Oracle session pooling for connections
@@ -164,6 +164,17 @@ Description: ILRT Django Oracle pool
         
         Changelog
         =========
+        
+        1.0 Add multiple connection extras configuration (2012-11-17)
+        -------------------------------------------------------------
+        
+        - Use logger for wrong credentials error, if available, and hide pw
+        - Fix tests for running against an existing database 
+        - Fix logger usage so its OK when logging cursor errors
+          [Ed Crewe]
+        - Add extras dictionary and logger to connections, rather than globally so each one
+          can be configured and log separately
+          [Kent Watson]
         
         0.9 Django 1.4 compatibility fixes (2012-05-18)
         -----------------------------------------------

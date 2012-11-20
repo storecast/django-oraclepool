@@ -1,10 +1,40 @@
 import decimal
-from django.db import models
 from django.test import TestCase
+from oraclepool.tests.regress.models import *
 
-class Bug38Table(models.Model):
-    d = models.DecimalField(max_digits=5, decimal_places=2)
+class Bug26TestCase(TestCase):
+    """Test that slicing queries w/ duplicate column names works."""
 
+    def testWithDuplicateColumnNames(self):
+        b = RelatedB(a='this is a value', b="valueb", c="valuec")
+        b.save()
+        
+        RelatedA(a="valuea", b=b).save()
+        RelatedA(a="valuea", b=b).save()
+
+        items = RelatedA.objects.select_related()[1:2]
+        self.assertEqual(len(items), 1)
+
+class Bug37TestCase(TestCase):
+    """Test that IntegrityErrors are raised when appropriate."""
+
+    def testDuplicateKeysFails(self):
+        Bug37ATable(pk=1, a='a', b='b', c='c').save(force_insert=True)
+        try:
+            Bug37ATable(pk=1, a='a', b='b', c='c').save(force_insert=True)
+        except Exception, e:
+            self.failUnless(isinstance(e, IntegrityError) or str(e).find('ORA-00001')>-1,
+                            'Expected IntegrityError but got: %s - %s' % (type(e),str(e)))
+            
+    def testDeleteRelatedRecordFails(self):
+        a2 = Bug37ATable(a='a', b='b', c='c')
+        a2.save()
+        
+        Bug37BTable(d='d', a=a2).save()
+        try:
+            a2.delete()
+        except Exception, e:
+            self.failUnless(isinstance(e, IntegrityError), 'Expected IntegrityError but got: %s' % type(e))
 
 class Bug38TestCase(TestCase):
     def testInsertVariousFormats(self):
@@ -71,5 +101,21 @@ class Bug38TestCase(TestCase):
         d1 = Bug38Table.objects.all()[0]
         self.assertEquals(decimal.Decimal('450.0'), d1.d)
 
+
+class Bug58TestCase(TestCase):
+    def testDistinctRelated(self):
+        i1 = Bug58TableIn(name='bread')
+        i1.save()
+        i2 = Bug58TableIn(name='butter')
+        i2.save()
+        
+        r = Bug58TableRecipe(name='toast')
+        r.save()
+        
+        Bug58TableItem(recipe=r, ingredient=i1, amount='1 slice').save()
+        Bug58TableItem(recipe=r, ingredient=i2, amount='1 Tbsp').save()
+
+        q = list(Bug58TableRecipe.objects.filter(item__ingredient__name__in=['bread','butter']).distinct())
+        self.assertEqual(len(q), 1)
 
         

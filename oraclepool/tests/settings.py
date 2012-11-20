@@ -130,10 +130,11 @@ TEMPLATE_DIRS = (
 )
 
 INSTALLED_APPS = (
-    'performance',
-    'apitest',
-    'regress',
-    'slicing',
-    'nulls',
-    'aggregates'
+    'oraclepool',
+    'oraclepool.tests.performance',
+    'oraclepool.tests.apitest',
+    'oraclepool.tests.regress',
+    'oraclepool.tests.slicing',
+    'oraclepool.tests.nulls',
+    'oraclepool.tests.aggregates'
 )
