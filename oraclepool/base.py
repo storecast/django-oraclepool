@@ -94,7 +94,6 @@ def get_logger(extras):
         # if log file is writable do it
         if not logfile:
             raise Exception('Log path %s not found' % extras.get('logpath', ''))
-            return None
         else:
             logging.basicConfig(filename=logfile, level=loglevel)
             mylogger = logging.getLogger("oracle_pool")
@@ -292,16 +291,17 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         cursor = None
         if self.pool is not None:
             if self.connection is None:
-                # Set oracle date to ansi date format.  This only needs to execute
-                # once when we create a new connection. 
-                self.connection = self.pool.acquire()
+                
+                # Get a connection, after confirming that is a valid connection  
+                self.connection = self._get_alive_connection()
+                
                 if connection_created:
                     # Assume acquisition of existing connection = create for django signal
                     connection_created.send(sender=self.__class__)
                 if self.logger:
                     self.logger.info("Acquire pooled connection \n%s\n" % self.connection.dsn)
 
-                cursor = FormatStylePlaceholderCursor(self.connection)
+                cursor = FormatStylePlaceholderCursor(self.connection, self.logger)
                 
                 # In case one connection in the pool dies we need to retry others in the pool
                 retry = 0
@@ -311,11 +311,13 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                         cursor.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD' "  
                                        "NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF'")
                         retry = max_retry
-                    except Database.Error as error:
-                        self.logger.warn("Failed to set session date due to error: %s" % error)
+                    except Database.Error, error:
+                        if self.logger:
+                            self.logger.warn("Failed to set session date due to error: %s" % error)
                         # If we have exhausted all of our connections in our pool raise the error
                         if retry == max_retry - 1:
-                            self.logger.critical("Exhausted %d connections in the connection pool")
+                            if self.logger:
+                                self.logger.critical("Exhausted %d connections in the connection pool")
                             raise
                     
                     retry += 1
@@ -323,12 +325,14 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 if self.extras.get('session', []):
                     for sql in self.extras['session']:
                         cursor.execute(sql)
+
                 try:
-                    self.oracle_version = int(self.connection.version.split('.')[0])
                     # There's no way for the DatabaseOperations class to know the
                     # currently active Oracle version, so we do some setups here.
                     # TODO: Multi-db support will need a better solution (a way to
                     # communicate the current version).
+                    self.oracle_version = int(self.connection.version.split('.')[0])
+                    
                     if self.oracle_version <= 9:
                         self.ops.regex_lookup = self.ops.regex_lookup_9
                     else:
@@ -336,6 +340,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 except ValueError, err:
                     if self.logger:
                         self.logger.warn(str(err))
+                        
                 try:
                     self.connection.stmtcachesize = 20
                 except:
@@ -343,7 +348,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     # stmtcachesize is available only in 4.3.2 and up.
                     pass
             else:
-                cursor = FormatStylePlaceholderCursor(self.connection)                
+                cursor = FormatStylePlaceholderCursor(self.connection, self.logger)                
         else:
             if self.logger:
                 self.logger.critical('Pool couldnt be created - please check your Oracle connection or credentials')
@@ -351,11 +356,32 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 raise Exception('Pool couldnt be created - please check your Oracle connection or credentials')
             
         if not cursor:
-            cursor = FormatStylePlaceholderCursor(self.connection)
+            cursor = FormatStylePlaceholderCursor(self.connection, self.logger)
         # Default arraysize of 1 is highly sub-optimal.
         cursor.arraysize = 100
         return cursor
 
+    def _get_alive_connection(self):
+        """ Get a connection from the connection pool.  Make sure it's a valid connection (using ping()) before returning it. """        
+        connection_ok = False
+        sanity_check = 0
+        sanity_threshold = self.extras.get('max',10)
+        
+        while connection_ok == False:
+            new_conn = self.pool.acquire()
+            try:
+                new_conn.ping()
+                connection_ok = True
+            except Database.Error, error:
+                sanity_check += 1
+                if sanity_check > sanity_threshold:
+                    raise Exception('Could not get a valid/alive connection from the connection pool.')
+                if self.logger:
+                    self.logger.critical('Found a dead connection.  Dropping from pool.')
+                self.pool.drop(new_conn)
+        
+        return new_conn
+        
     def close(self):
         """ Releases connection back to pool """
         if self.connection is not None:
@@ -363,7 +389,7 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 self.logger.debug("Release pooled connection\n%s\n" % self.connection.dsn)
             try:
                 self.pool.release(self.connection)
-            except Database.OperationalError as error:
+            except Database.OperationalError, error:
                 if self.logger:
                     self.logger.debug("Release pooled connection failed due to: %s" % str(error))
             finally:
@@ -373,10 +399,23 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         """ Oracle doesn't support savepoint commits.  Ignore them. """
         pass
 
+    def _rollback(self):
+        if self.connection:
+            try:
+                self.connection.rollback()
+            except Database.OperationalError, error:
+                if self.logger:
+                    self.logger.debug("Rollback failed due to:  %s" % str(error))
+                    
 class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
     """ Added just to allow use of % for like queries without params
         and use of logger if present.
     """
+    
+    def __init__(self, connection, logger):
+        OracleFormatStylePlaceholderCursor.__init__(self, connection)
+        self.logger = logger
+        
 
     def cleanquery(self, query, args=None):
         """ cx_Oracle wants no trailing ';' for SQL statements.  For PL/SQL, it
