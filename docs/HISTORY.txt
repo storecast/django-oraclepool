@@ -1,12 +1,13 @@
 Changelog
 =========
 
-1.2 Make sure connections that have timed out are flushed
----------------------------------------------------------
+1.2 Make sure only live connections are used
+--------------------------------------------
 
 - Add get_alive_connection wrapper to conn.ping() test connections before use [Brent Watson]
 - Try Oracle rollback if requested [Brent Watson]
 - Pass logger from connection to cursor [Brent Watson]
+- Use retry on connections in case one has died [Ricardo del Cid]
 - Add models.py so test suite runs [Ed Crewe]
 
 1.1 Refactor the tests (2012-11-18)
