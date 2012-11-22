@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.2 Make sure only live connections are used
---------------------------------------------
+1.2 Make sure only live connections are used (2012-11-22)
+---------------------------------------------------------
 
 - Add get_alive_connection wrapper to conn.ping() test connections before use [Brent Watson]
 - Try Oracle rollback if requested [Brent Watson]
