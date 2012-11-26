@@ -92,7 +92,7 @@ confirmation on a production instance.
 
 It should be remembered that there is also a very great deal of performance work that can be 
 done at the database level. I have posted a page with some of the tips and tricks for 
-improving database performance on my blog - http://python.blogs.ilrt.org/database-performance/
+improving database performance on my blog - http://edcrewe.blogspot.co.uk/p/database-performance.html
 
 Pooling alternatives
 --------------------
