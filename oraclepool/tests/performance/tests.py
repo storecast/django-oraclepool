@@ -1,4 +1,4 @@
-from django.db import load_backend
+from django.db import load_backend, connection
 
 from django.core import signals
 from django.db import close_connection
