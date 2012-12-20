@@ -1,18 +1,15 @@
-from django.db import connection, backend, load_backend
+from django.db import load_backend
 
 from django.core import signals
 from django.db import close_connection
-from django.core.handlers.base import BaseHandler
 
-from django.db.backends.oracle.base import DatabaseWrapper as OracleDatabaseWrapper
-from oraclepool.base import DatabaseWrapper as PoolDatabaseWrapper
 from django.test import TestCase
 from datetime import datetime
 from django.conf import settings 
 from oraclepool.tests.settings import get_settings_dict
 from random import randint
 
-from oraclepool.tests.performance.models import OneTable, TwoTable
+from oraclepool.tests.performance.models import OneTable
 
 class PerformanceTestCase(TestCase):
     """ Runs a set of inserts and queries via each oracle
@@ -67,11 +64,11 @@ class PerformanceTestCase(TestCase):
                 conncount[engine] = 1 - i
                 for conn in self.conns[engine]:
                     if conn:
-                        conncount[engine] +=1
+                        conncount[engine] += 1
                 print '%s engine took %s microsecs with %s connections' % (engine,
                                                                self.time[engine],
                                                                conncount[engine])
-            self.assertEquals(self.rows['oracle'],self.rows['oraclepool'])
+            self.assertEquals(self.rows['oracle'], self.rows['oraclepool'])
             print 'For each engine ran %d queries' % int(10 + (self.querycount * 5))
             speed = int(100*self.time['oracle']/self.time['oraclepool'])
             if speed > 100:
