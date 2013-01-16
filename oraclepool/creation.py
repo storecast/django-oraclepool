@@ -10,7 +10,7 @@ def existing(settings_dict):
         for database tests where you dont have oracle dba drop database permissions
         Eg: if existing = 'Unicode' then its just used for the latter.
     """
-    extras_setting = settings_dict['EXTRAS'] if 'EXTRAS' in settings_dict else None
+    extras_setting = settings_dict['EXTRAS'] if 'EXTRAS' in settings_dict else {}
     
     if extras_setting.has_key('existing'):
         return extras_setting['existing']
