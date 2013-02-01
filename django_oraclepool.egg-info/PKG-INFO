@@ -168,6 +168,12 @@ Description: ILRT Django Oracle pool
         Changelog
         =========
         
+        1.3 Add fix for multiple EXTRAs existing UNRELEASED
+        ---------------------------------------------------
+        
+        - Add fix for default value for multiple EXTRAs existing
+          [Nikita Zubchick]
+        
         1.2 Make sure only live connections are used (2012-11-22)
         ---------------------------------------------------------
         
