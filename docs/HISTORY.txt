@@ -8,7 +8,7 @@ Changelog
   [Nikita Zubchick]
 - Fix dbshell by adding base._connect_string property
   [Bug reporter - skyl]
-- Added type conversion to session creation to help generated credential users
+- Minor tweaks - e.g. type casting of settings
   [Ed Crewe]
 
 1.2 Make sure only live connections are used (2012-11-22)
