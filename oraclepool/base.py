@@ -60,7 +60,7 @@ def get_extras(user_defined_extras):
                                        #    'alter session set session_cached_cursors = 20']
                       }
     
-    if user_defined_extras != None or len(user_defined_extras) != 0:
+    if user_defined_extras and len(user_defined_extras) != 0:
         return user_defined_extras
     elif hasattr(settings, 'DATABASE_EXTRAS'):
         return settings.DATABASE_EXTRAS
@@ -252,19 +252,19 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                 if len(settings_dict.get('HOST','').strip()) == 0:
                     settings_dict['HOST'] = 'localhost'
                 if len(settings_dict.get('PORT','').strip()) != 0:
-                    dsn = Database.makedsn(settings_dict['HOST'],
+                    dsn = Database.makedsn(str(settings_dict['HOST']),
                                            int(settings_dict['PORT']),
-                                           settings_dict.get('NAME',''))
+                                           str(settings_dict.get('NAME','')))
                 else:
                     dsn = settings_dict.get('NAME','')
 
                 try:
-                    pool = Database.SessionPool(settings_dict.get('USER',''), 
-                                                settings_dict.get('PASSWORD',''), 
+                    pool = Database.SessionPool(str(settings_dict.get('USER','')), 
+                                                str(settings_dict.get('PASSWORD','')), 
                                                 dsn, 
-                                                self.extras.get('min',4), 
-                                                self.extras.get('max',8), 
-                                                self.extras.get('increment',1),
+                                                int(self.extras.get('min', 4)), 
+                                                int(self.extras.get('max', 8)), 
+                                                int(self.extras.get('increment', 1)),
                                                 threaded = self.extras.get('threaded',
                                                                                True))
                 except Exception, err:

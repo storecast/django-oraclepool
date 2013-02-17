@@ -40,7 +40,7 @@ class DatabaseCreation(OracleDatabaseCreation):
         OracleDatabaseCreation.__init__(self, connection)
         
         ascii_data_types = get_ascii_data_types(self.connection.settings_dict)
-        if ascii_data_types != None:
+        if ascii_data_types:
             data_types = ascii_data_types
     
     def _create_test_db(self, verbosity=1, autoclobber=False):
