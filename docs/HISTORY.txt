@@ -6,7 +6,7 @@ Changelog
 
 - Add fix for default value for multiple EXTRAs existing
   [Nikita Zubchick]
-- Fix dbshell by adding back connection_string property
+- Fix dbshell by adding base._connect_string property
   [Bug reporter - skyl]
 
 1.2 Make sure only live connections are used (2012-11-22)
