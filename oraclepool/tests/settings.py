@@ -37,9 +37,12 @@ DATABASES= { 'oraclepool':{'ENGINE' : 'oraclepool',
                        }
              }
 
-for db in ['oraclepool','oracle']:
+# Replace credentials details for both engines but make sure 
+# do not over-ride the engine and related extras from above
+for db in DATABASES.keys():
     for key in CREDENTIALS.keys():
-        DATABASES[db][key] = CREDENTIALS[key] 
+        if key not in ('ENGINE', 'EXTRAS'):
+            DATABASES[db][key] = CREDENTIALS[key] 
 
 ### Switch backend for standard tests
 ### Specify oracle or oraclepool for running the test suite against
@@ -51,7 +54,7 @@ def get_settings_dict(db='default'):
     """   
     try:
         from settings import DATABASES
-        settings_dict = DATABASES.get(db,{})
+        settings_dict = DATABASES.get(db, {})
     except:
         pass
     if not settings_dict:
@@ -129,7 +132,22 @@ TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
 )
 
+# required if South is installed ...
+SOUTH_DATABASE_ADAPTERS = { 'default': "south.db.oracle" }
+
+# DEBUG - run tests over Oracle engine only for South - check same pass rate!
+#for key in ['ENGINE', 'EXTRAS']:
+#    DATABASES['oraclepool'][key] = DATABASES['oracle'][key]
+# SKIP_SOUTH_TESTS = False
+# Drop south test tables ...
+#BEGIN
+#FOR c IN (SELECT table_name FROM user_tables where table_name like 'TEST%') LOOP
+#EXECUTE IMMEDIATE ('DROP TABLE ' || c.table_name || ' CASCADE CONSTRAINTS');
+#END LOOP;
+#END;
+
 INSTALLED_APPS = (
+#    'south',
     'oraclepool',
     'oraclepool.tests.performance',
     'oraclepool.tests.apitest',
@@ -138,7 +156,6 @@ INSTALLED_APPS = (
     'oraclepool.tests.nulls',
     'oraclepool.tests.aggregates'
 )
-
 
 # For CI testing of releases
 try:

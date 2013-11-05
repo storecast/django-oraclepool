@@ -16,7 +16,7 @@ Pruned original ticket's base.py to just hold the pooling relevant code.
 Using the standard Oracle connection for the rest of the database classes, 
 ie. operations, client and introspection. 
 
-Tested with django 1.1 to 1.4
+Tested with django 1.1 to 1.5
 
 Extra features
 --------------
@@ -142,7 +142,12 @@ In practise I found the actual performance improvement significantly greater tha
 by the doubling of speed that the multiple connections performance test gives. However that
 may not be the case dependent on your production oracle and web server environment.
 
+South
+-----
 
+If you use south you need to add the following - see oraclepool.tests.settings:
+
+SOUTH_DATABASE_ADAPTERS = { 'default': "south.db.oracle" }
 
 
 
