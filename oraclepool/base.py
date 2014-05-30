@@ -4,6 +4,7 @@ Requires cx_Oracle: http://www.python.net/crew/atuining/cx_Oracle/
 """
 
 import os
+import sys
 import thread
 from django.db.backends import BaseDatabaseWrapper, BaseDatabaseValidation
 try:
@@ -16,6 +17,8 @@ from django.db.backends.oracle.base import DatabaseOperations as OracleDatabaseO
 from django.db.backends.oracle.client import DatabaseClient as OracleDatabaseClient
 from django.db.backends.oracle.introspection import DatabaseIntrospection as OracleDatabaseIntrospection
 from django.db.backends.oracle.base import FormatStylePlaceholderCursor as OracleFormatStylePlaceholderCursor
+from django.db.backends import util
+from django.db import utils
 
 from oraclepool.creation import DatabaseCreation
 from django.conf import settings
@@ -25,6 +28,10 @@ try:
 except ImportError, e:
     from django.core.exceptions import ImproperlyConfigured
     raise ImproperlyConfigured("Error loading cx_Oracle module: %s" % e)
+
+DatabaseError = Database.DatabaseError
+IntegrityError = Database.IntegrityError
+
 
 from django.utils.encoding import smart_str, force_unicode
 # Check whether cx_Oracle was compiled with the WITH_UNICODE option.  This will
@@ -472,16 +479,13 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
         self._guess_input_sizes([params])
         try:
             return self.cursor.execute(query, self._param_generator(params))
-        except Database.Error, error:
-            # cx_Oracle <= 4.4.0 wrongly raises a Database.Error for ORA-01400.
-            if error.args[0].code == 1400 and not isinstance(error, 
-                                                             Database.IntegrityError):
-                error = Database.IntegrityError(error.args[0])
-            err = '%s due to query:%s' % (error, query)
-            if self.logger:
-                self.logger.critical(err)
-            else:
-                raise Exception(err) 
+        except Database.IntegrityError as e:
+            raise utils.IntegrityError, utils.IntegrityError(*tuple(e)), sys.exc_info()[2]
+        except Database.DatabaseError as e:
+            # cx_Oracle <= 4.4.0 wrongly raises a DatabaseError for ORA-01400.
+            if hasattr(e.args[0], 'code') and e.args[0].code == 1400 and not isinstance(e, IntegrityError):
+                raise utils.IntegrityError, utils.IntegrityError(*tuple(e)), sys.exc_info()[2]
+            raise utils.DatabaseError, utils.DatabaseError(*tuple(e)), sys.exc_info()[2]
 
     def executemany(self, query, params=[]):
         try:
@@ -495,12 +499,10 @@ class FormatStylePlaceholderCursor(OracleFormatStylePlaceholderCursor):
         try:
             return self.cursor.executemany(query,
                                 [self._param_generator(p) for p in formatted])
-        except Database.Error, error:
-            # cx_Oracle <= 4.4.0 wrongly raises a Database.Error for ORA-01400.
-            if error.args[0].code == 1400 and not isinstance(error, 
-                                                             Database.IntegrityError):
-                error = Database.IntegrityError(error.args[0])
-            if self.logger:
-                self.logger.critical('%s due to query: %s' % (error, query))                
-            else:
-                raise 
+        except Database.IntegrityError as e:
+            raise utils.IntegrityError, utils.IntegrityError(*tuple(e)), sys.exc_info()[2]
+        except Database.DatabaseError as e:
+            # cx_Oracle <= 4.4.0 wrongly raises a DatabaseError for ORA-01400.
+            if hasattr(e.args[0], 'code') and e.args[0].code == 1400 and not isinstance(e, IntegrityError):
+                raise utils.IntegrityError, utils.IntegrityError(*tuple(e)), sys.exc_info()[2]
+            raise utils.DatabaseError, utils.DatabaseError(*tuple(e)), sys.exc_info()[2]
